@@ -1,0 +1,546 @@
+/*******************************************************************************
+* LowPower Library
+* Version: 1.00
+* Date: 04-07-2011
+* Company: Rocket Scream Electronics
+* Website: www.rocketscream.com
+*
+* This is a lightweight low power library for Arduino. Please check our wiki 
+* (www.rocketscream.com/wiki) for more information on using this piece of 
+* library.
+*
+* This library is licensed under Creative Commons Attribution-ShareAlike 3.0 
+* Unported License.
+*
+* Revision  Description
+* ========  ===========
+* 1.00      Initial public release.
+*******************************************************************************/
+
+#include <WProgram.h>
+#include <avr/sleep.h>
+#include <avr/wdt.h>
+#include <avr/power.h>
+#include <avr/interrupt.h>
+#include "LowPower.h"
+
+#define sleep_bod_disable() 										\
+do { 																\
+  uint8_t tempreg; 													\
+  __asm__ __volatile__("in %[tempreg], %[mcucr]" "\n\t" 			\
+                       "ori %[tempreg], %[bods_bodse]" "\n\t" 		\
+                       "out %[mcucr], %[tempreg]" "\n\t" 			\
+                       "andi %[tempreg], %[not_bodse]" "\n\t" 		\
+                       "out %[mcucr], %[tempreg]" 					\
+                       : [tempreg] "=&d" (tempreg) 					\
+                       : [mcucr] "I" _SFR_IO_ADDR(MCUCR), 			\
+                         [bods_bodse] "i" (_BV(BODS) | _BV(BODSE)), \
+                         [not_bodse] "i" (~_BV(BODSE))); 			\
+} while (0)
+
+#define	lowPowerBodOn(mode)	\
+do { 						\
+      set_sleep_mode(mode); \
+      cli();				\
+      sleep_enable();		\
+      sei();				\
+      sleep_cpu();			\
+      sleep_disable();		\
+      sei();				\
+} while (0);
+
+#define	lowPowerBodOff(mode)\
+do { 						\
+      set_sleep_mode(mode); \
+      cli();				\
+      sleep_enable();		\
+      sleep_bod_disable();	\
+      sei();				\
+      sleep_cpu();			\
+      sleep_disable();		\
+      sei();				\
+} while (0);
+
+/*******************************************************************************
+* Name: idle
+* Description: Putting microcontroller into idle state. Please make sure you 
+*			   understand the implication and result of disabling module.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_1S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+* 4. timer1		Timer 1 module disable control:
+*				(a) TIMER1_OFF - Turn off Timer 1 module
+*				(b) TIMER1_ON - Leave Timer 1 module in its default state
+*
+* 5. timer0		Timer 0 module disable control:
+*				(a) TIMER0_OFF - Turn off Timer 0 module
+*				(b) TIMER0_ON - Leave Timer 0 module in its default state
+*
+* 6. spi		SPI module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 7. usart0		USART0 module disable control:
+*				(a) USART0_OFF - Turn off USART0  module
+*				(b) USART0_ON - Leave USART0 module in its default state
+*
+* 8. twi		TWI module disable control:
+*				(a) TWI_OFF - Turn off TWI module
+*				(b) TWI_ON - Leave TWI module in its default state
+*
+*******************************************************************************/
+void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2, 
+							timer1_t timer1, timer0_t timer0,
+							spi_t spi, usart0_t usart0,	twi_t twi)
+{
+	// Temporary clock source variable 
+	uint8_t clockSource;
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		clockSource = 0;
+		
+		if (TCCR2B & CS22) clockSource |= (1 << CS22);
+		if (TCCR2B & CS21) clockSource |= (1 << CS21);
+		if (TCCR2B & CS20) clockSource |= (1 << CS20);
+	
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+		
+		power_timer2_disable();
+	}
+	
+	if (adc == ADC_OFF)	
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+	
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
+	if (timer0 == TIMER2_OFF)	power_timer0_disable();	
+	if (spi == SPI_OFF)			power_spi_disable();
+	if (usart0 == USART0_OFF)	power_usart0_disable();
+	if (twi == TWI_OFF)			power_twi_disable();
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	
+	lowPowerBodOn(SLEEP_MODE_IDLE);
+	
+	if (adc == ADC_OFF)
+	{
+		power_adc_enable();
+		ADCSRA |= (1 << ADEN);
+	}
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		if (clockSource & CS22) TCCR2B |= (1 << CS22);
+		if (clockSource & CS21) TCCR2B |= (1 << CS21);
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+		
+		power_timer2_enable();
+	}
+	
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
+	if (timer0 == TIMER2_OFF)	power_timer0_enable();	
+	if (spi == SPI_OFF)			power_spi_enable();
+	if (usart0 == USART0_OFF)	power_usart0_enable();
+	if (twi == TWI_OFF)			power_twi_enable();
+}
+
+/*******************************************************************************
+* Name: adcNoiseReduction
+* Description: Putting microcontroller into ADC noise reduction state. This is
+*			   a very useful state when using the ADC to achieve best and low 
+*              noise signal.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_1S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control. Turning off the ADC module is
+*				basically removing the purpose of this low power mode.
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+*******************************************************************************/
+void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc, 
+										 timer2_t timer2)
+{
+	// Temporary clock source variable 
+	uint8_t clockSource;
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		clockSource = 0;
+		
+		if (TCCR2B & CS22) clockSource |= (1 << CS22);
+		if (TCCR2B & CS21) clockSource |= (1 << CS21);
+		if (TCCR2B & CS20) clockSource |= (1 << CS20);
+	
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+	}
+	
+	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	
+	lowPowerBodOn(SLEEP_MODE_ADC);
+	
+	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		if (clockSource & CS22) TCCR2B |= (1 << CS22);
+		if (clockSource & CS21) TCCR2B |= (1 << CS21);
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+		
+	}
+}
+
+/*******************************************************************************
+* Name: powerDown
+* Description: Putting microcontroller into power down state. This is
+*			   the lowest current consumption state. Use this together with 
+*			   external pin interrupt to wake up through external event 
+*			   triggering (example: RTC clockout pin, SD card detect pin).
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_1S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control. Turning off the ADC module is
+*				basically removing the purpose of this low power mode.
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. bod		Brown Out Detector (BOD) module disable control:
+*				(a) BOD_OFF - Turn off BOD module
+*				(b) BOD_ON - Leave BOD module in its default state
+*
+*******************************************************************************/
+void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
+{
+	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	if (bod == BOD_OFF)	
+	{
+		lowPowerBodOff(SLEEP_MODE_PWR_DOWN);
+	}
+	else	
+	{
+		lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
+	}
+	
+	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
+}
+
+/*******************************************************************************
+* Name: powerSave
+* Description: Putting microcontroller into power save state. This is
+*			   the lowest current consumption state after power down. 
+*			   Use this state together with an external 32.768 kHz crystal (but
+*			   8/16 MHz crystal/resonator need to be removed) to provide an
+*			   asynchronous clock source to Timer 2. Please take note that 
+*			   Timer 2 is also used by the Arduino core for PWM operation. 
+*			   Please refer to wiring.c for explanation. Removal of the external
+*			   8/16 MHz crystal/resonator requires the microcontroller to run
+*			   on its internal RC oscillator which is not so accurate for time
+*			   critical operation.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_1S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control. Turning off the ADC module is
+*				basically removing the purpose of this low power mode.
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. bod		Brown Out Detector (BOD) module disable control:
+*				(a) BOD_OFF - Turn off BOD module
+*				(b) BOD_ON - Leave BOD module in its default state
+*
+* 4. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+*******************************************************************************/
+void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod, 
+							     timer2_t timer2)
+{
+	// Temporary clock source variable 
+	uint8_t clockSource;
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		clockSource = 0;
+		
+		if (TCCR2B & CS22) clockSource |= (1 << CS22);
+		if (TCCR2B & CS21) clockSource |= (1 << CS21);
+		if (TCCR2B & CS20) clockSource |= (1 << CS20);
+	
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+	}
+	
+	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	
+	if (bod == BOD_OFF)	
+	{
+		lowPowerBodOff(SLEEP_MODE_PWR_SAVE);
+	}
+	else
+	{
+		lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
+	}
+	
+	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		if (clockSource & CS22) TCCR2B |= (1 << CS22);
+		if (clockSource & CS21) TCCR2B |= (1 << CS21);
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+		
+	}
+}
+
+/*******************************************************************************
+* Name: powerStandby
+* Description: Putting microcontroller into power standby state. 
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_1S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control. Turning off the ADC module is
+*				basically removing the purpose of this low power mode.
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. bod		Brown Out Detector (BOD) module disable control:
+*				(a) BOD_OFF - Turn off BOD module
+*				(b) BOD_ON - Leave BOD module in its default state
+*
+*******************************************************************************/
+void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
+{
+	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	
+	if (bod == BOD_OFF)	
+	{
+		lowPowerBodOff(SLEEP_MODE_STANDBY);
+	}
+	else
+	{
+		lowPowerBodOn(SLEEP_MODE_STANDBY);
+	}
+	
+	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
+}
+
+/*******************************************************************************
+* Name: powerExtStandby
+* Description: Putting microcontroller into power extended standby state. This 
+*			   is different from the power standby state as it has the 
+*			   capability to run Timer 2 asynchronously.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_1S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control. Turning off the ADC module is
+*				basically removing the purpose of this low power mode.
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. bod		Brown Out Detector (BOD) module disable control:
+*				(a) BOD_OFF - Turn off BOD module
+*				(b) BOD_ON - Leave BOD module in its default state
+*
+* 4. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+*******************************************************************************/
+void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod, 
+									   timer2_t timer2)
+{
+	// Temporary clock source variable 
+	uint8_t clockSource;
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		clockSource = 0;
+		
+		if (TCCR2B & CS22) clockSource |= (1 << CS22);
+		if (TCCR2B & CS21) clockSource |= (1 << CS21);
+		if (TCCR2B & CS20) clockSource |= (1 << CS20);
+	
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+	}
+	
+	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	if (bod == BOD_OFF)	
+	{
+		lowPowerBodOff(SLEEP_MODE_EXT_STANDBY);
+	}
+	else	
+	{
+		lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
+	}
+	
+	
+	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		if (clockSource & CS22) TCCR2B |= (1 << CS22);
+		if (clockSource & CS21) TCCR2B |= (1 << CS21);
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+		
+	}
+}
+
+/*******************************************************************************
+* Name: ISR (WDT_vect)
+* Description: Watchdog Timer interrupt service routine. This routine is 
+*		       required to allow automatic WDIF and WDIE bit clearance in 
+*			   hardware.
+*
+*******************************************************************************/
+ISR (WDT_vect)
+{
+	// WDIE & WDIF is cleared in hardware upon entering this ISR
+	wdt_disable();
+}
+
+LowPowerClass LowPower;
