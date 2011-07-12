@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.00
-* Date: 04-07-2011
+* Version: 1.10
+* Date: 12-07-2011
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
 *
@@ -14,6 +14,8 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.10		Added #ifndef for sleep_bod_disable() for compatibility with future
+*			Arduino IDE release.
 * 1.00      Initial public release.
 *******************************************************************************/
 
@@ -24,6 +26,7 @@
 #include <avr/interrupt.h>
 #include "LowPower.h"
 
+#ifndef sleep_bod_disable()
 #define sleep_bod_disable() 										\
 do { 																\
   uint8_t tempreg; 													\
@@ -37,6 +40,7 @@ do { 																\
                          [bods_bodse] "i" (_BV(BODS) | _BV(BODSE)), \
                          [not_bodse] "i" (~_BV(BODSE))); 			\
 } while (0)
+#endif
 
 #define	lowPowerBodOn(mode)	\
 do { 						\
