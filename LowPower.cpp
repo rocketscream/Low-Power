@@ -14,22 +14,24 @@
 *
 * Revision  Description
 * ========  ===========
-* 1.10		Added #ifndef for sleep_bod_disable() for compatibility with future
-*			Arduino IDE release.
+* 1.20			Remove typo error in idle method for checking whether Timer 0 was 
+*						turned off.
+*						Remove dependecy on WProgram.h which is not required.
+*						Tested to work with Arduino IDE 1.0.
+* 1.10			Added #ifndef for sleep_bod_disable() for compatibility with future
+*						Arduino IDE release.
 * 1.00      Initial public release.
 *******************************************************************************/
-
-#include <WProgram.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <avr/power.h>
 #include <avr/interrupt.h>
 #include "LowPower.h"
 
-#ifndef sleep_bod_disable()
+#ifndef sleep_bod_disable
 #define sleep_bod_disable() 										\
 do { 																\
-  uint8_t tempreg; 													\
+  unsigned char tempreg; 													\
   __asm__ __volatile__("in %[tempreg], %[mcucr]" "\n\t" 			\
                        "ori %[tempreg], %[bods_bodse]" "\n\t" 		\
                        "out %[mcucr], %[tempreg]" "\n\t" 			\
@@ -120,12 +122,10 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 							spi_t spi, usart0_t usart0,	twi_t twi)
 {
 	// Temporary clock source variable 
-	uint8_t clockSource;
+	unsigned char clockSource = 0;
 	
 	if (timer2 == TIMER2_OFF)
 	{
-		clockSource = 0;
-		
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
 		if (TCCR2B & CS21) clockSource |= (1 << CS21);
 		if (TCCR2B & CS20) clockSource |= (1 << CS20);
@@ -145,7 +145,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 	}
 	
 	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
-	if (timer0 == TIMER2_OFF)	power_timer0_disable();	
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
 	if (spi == SPI_OFF)			power_spi_disable();
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
@@ -174,7 +174,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 	}
 	
 	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
-	if (timer0 == TIMER2_OFF)	power_timer0_enable();	
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
 	if (spi == SPI_OFF)			power_spi_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
@@ -216,12 +216,10 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 										 timer2_t timer2)
 {
 	// Temporary clock source variable 
-	uint8_t clockSource;
+	unsigned char clockSource = 0;
 	
 	if (timer2 == TIMER2_OFF)
 	{
-		clockSource = 0;
-		
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
 		if (TCCR2B & CS21) clockSource |= (1 << CS21);
 		if (TCCR2B & CS20) clockSource |= (1 << CS20);
@@ -354,12 +352,10 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 							     timer2_t timer2)
 {
 	// Temporary clock source variable 
-	uint8_t clockSource;
+	unsigned char clockSource = 0;
 	
 	if (timer2 == TIMER2_OFF)
 	{
-		clockSource = 0;
-		
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
 		if (TCCR2B & CS21) clockSource |= (1 << CS21);
 		if (TCCR2B & CS20) clockSource |= (1 << CS20);
@@ -490,12 +486,10 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 									   timer2_t timer2)
 {
 	// Temporary clock source variable 
-	uint8_t clockSource;
+	unsigned char clockSource = 0;
 	
 	if (timer2 == TIMER2_OFF)
 	{
-		clockSource = 0;
-		
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
 		if (TCCR2B & CS21) clockSource |= (1 << CS21);
 		if (TCCR2B & CS20) clockSource |= (1 << CS20);
@@ -521,16 +515,14 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 	{
 		lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
 	}
-	
-	
+		
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 	
 	if (timer2 == TIMER2_OFF)
 	{
 		if (clockSource & CS22) TCCR2B |= (1 << CS22);
 		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);
-		
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);	
 	}
 }
 
