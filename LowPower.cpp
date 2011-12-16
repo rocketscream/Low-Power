@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.10
-* Date: 12-07-2011
+* Version: 1.20
+* Date: 16-12-2011
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
 *
