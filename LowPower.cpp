@@ -85,7 +85,7 @@ do { 						\
 *				(g) SLEEP_1S - 1 s sleep
 *				(h) SLEEP_2S - 2 s sleep
 *				(i) SLEEP_4S - 4 s sleep
-*				(j) SLEEP_1S - 8 s sleep
+*				(j) SLEEP_8S - 8 s sleep
 *				(k) SLEEP_FOREVER - Sleep without waking up through WDT
 *
 * 2. adc		ADC module disable control:
@@ -199,7 +199,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 *				(g) SLEEP_1S - 1 s sleep
 *				(h) SLEEP_2S - 2 s sleep
 *				(i) SLEEP_4S - 4 s sleep
-*				(j) SLEEP_1S - 8 s sleep
+*				(j) SLEEP_8S - 8 s sleep
 *				(k) SLEEP_FOREVER - Sleep without waking up through WDT
 *
 * 2. adc		ADC module disable control. Turning off the ADC module is
@@ -271,7 +271,7 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 *				(g) SLEEP_1S - 1 s sleep
 *				(h) SLEEP_2S - 2 s sleep
 *				(i) SLEEP_4S - 4 s sleep
-*				(j) SLEEP_1S - 8 s sleep
+*				(j) SLEEP_8S - 8 s sleep
 *				(k) SLEEP_FOREVER - Sleep without waking up through WDT
 *
 * 2. adc		ADC module disable control. Turning off the ADC module is
@@ -331,7 +331,7 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 *				(g) SLEEP_1S - 1 s sleep
 *				(h) SLEEP_2S - 2 s sleep
 *				(i) SLEEP_4S - 4 s sleep
-*				(j) SLEEP_1S - 8 s sleep
+*				(j) SLEEP_8S - 8 s sleep
 *				(k) SLEEP_FOREVER - Sleep without waking up through WDT
 *
 * 2. adc		ADC module disable control. Turning off the ADC module is
@@ -411,7 +411,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 *				(g) SLEEP_1S - 1 s sleep
 *				(h) SLEEP_2S - 2 s sleep
 *				(i) SLEEP_4S - 4 s sleep
-*				(j) SLEEP_1S - 8 s sleep
+*				(j) SLEEP_8S - 8 s sleep
 *				(k) SLEEP_FOREVER - Sleep without waking up through WDT
 *
 * 2. adc		ADC module disable control. Turning off the ADC module is
@@ -465,7 +465,7 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 *				(g) SLEEP_1S - 1 s sleep
 *				(h) SLEEP_2S - 2 s sleep
 *				(i) SLEEP_4S - 4 s sleep
-*				(j) SLEEP_1S - 8 s sleep
+*				(j) SLEEP_8S - 8 s sleep
 *				(k) SLEEP_FOREVER - Sleep without waking up through WDT
 *
 * 2. adc		ADC module disable control. Turning off the ADC module is
