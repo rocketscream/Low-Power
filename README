@@ -1,0 +1,8 @@
+LowPower Library by Rocket Scream Electronics
+
+IMPORTANT: If you want to use this library with Arduino, you must rename this folder from "Low-Power" to just "LowPower". Arduino refuses to use a library with a hyphen in the name.
+
+Their description: "This is a lightweight low power library for Arduino. Please check our wiki (www.rocketscream.com/wiki) for more information on using this piece of library."
+
+A few small typos have been fixed by Matthew Beckler and Adam Wolf of Wayne and Layne, LLC.
+
