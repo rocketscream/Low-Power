@@ -468,6 +468,73 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 }
 #endif
 
+
+/*******************************************************************************
+* Name: idle
+* Description: Putting ATtiny85 into idle state. Please make sure you 
+*			         understand the implication and result of disabling module.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_8S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer1		Timer 1 module disable control:
+*				(a) TIMER1_OFF - Turn off Timer 1 module
+*				(b) TIMER1_ON - Leave Timer 1 module in its default state
+*
+* 4. timer0		Timer 0 module disable control:
+*				(a) TIMER0_OFF - Turn off Timer 0 module
+*				(b) TIMER0_ON - Leave Timer 0 module in its default state
+*
+*******************************************************************************/
+#if defined __AVR_ATtiny85__
+void	LowPowerClass::idle(period_t period, adc_t adc, 
+							            timer1_t timer1, timer0_t timer0)
+{
+	if (adc == ADC_OFF)	
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCR |= (1 << WDIE);	
+	}
+	
+	lowPowerBodOn(SLEEP_MODE_IDLE);
+	
+	if (adc == ADC_OFF)
+	{
+		power_adc_enable();
+		ADCSRA |= (1 << ADEN);
+	}
+
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
+}
+#endif
+
 /*******************************************************************************
 * Name: adcNoiseReduction
 * Description: Putting microcontroller into ADC noise reduction state. This is
@@ -506,7 +573,7 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 	// Temporary clock source variable 
 	unsigned char clockSource = 0;
 	
-	#if !defined(__AVR_ATmega32U4__)
+	#if !defined (__AVR_ATmega32U4__) && !defined (__AVR_ATtiny85__)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
@@ -525,14 +592,18 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		#if defined(__AVR_ATtiny85__)
+			WDTCR |= (1 << WDIE);	
+		#else
+			WDTCSR |= (1 << WDIE);	
+		#endif
 	}
 	
 	lowPowerBodOn(SLEEP_MODE_ADC);
 	
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 	
-	#if !defined(__AVR_ATmega32U4__)
+	#if !defined(__AVR_ATmega32U4__) && !defined(__AVR_ATtiny85__)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (clockSource & CS22) TCCR2B |= (1 << CS22);
@@ -583,7 +654,11 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		#if defined(__AVR_ATtiny85__)
+			WDTCR |= (1 << WDIE);	
+		#else
+			WDTCSR |= (1 << WDIE);	
+		#endif
 	}
 	if (bod == BOD_OFF)	
 	{
@@ -650,7 +725,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 	// Temporary clock source variable 
 	unsigned char clockSource = 0;
 
-	#if !defined(__AVR_ATmega32U4__)
+	#if !defined(__AVR_ATmega32U4__) && !defined(__AVR_ATtiny85__)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
@@ -669,7 +744,11 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		#if defined(__AVR_ATtiny85__)
+			WDTCR |= (1 << WDIE);	
+		#else
+			WDTCSR |= (1 << WDIE);	
+		#endif	
 	}
 	
 	if (bod == BOD_OFF)	
@@ -687,7 +766,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 	
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 	
-	#if !defined(__AVR_ATmega32U4__)
+	#if !defined(__AVR_ATmega32U4__) && !defined(__AVR_ATtiny85__)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (clockSource & CS22) TCCR2B |= (1 << CS22);
@@ -734,7 +813,11 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		#if defined(__AVR_ATtiny85__)
+			WDTCR |= (1 << WDIE);	
+		#else
+			WDTCSR |= (1 << WDIE);	
+		#endif	
 	}
 	
 	if (bod == BOD_OFF)	
@@ -742,12 +825,20 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 		#if defined __AVR_ATmega328P__
 			lowPowerBodOff(SLEEP_MODE_STANDBY);
 		#else
-			lowPowerBodOn(SLEEP_MODE_STANDBY);
+			#if !defined __AVR_ATtiny85__
+				lowPowerBodOn(SLEEP_MODE_STANDBY);
+			#else
+				lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
+			#endif
 		#endif
 	}
 	else
 	{
-		lowPowerBodOn(SLEEP_MODE_STANDBY);
+		#if !defined __AVR_ATtiny85__
+			lowPowerBodOn(SLEEP_MODE_STANDBY);
+		#else
+			lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
+		#endif
 	}
 	
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
@@ -788,13 +879,14 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 *				(b) TIMER2_ON - Leave Timer 2 module in its default state
 *
 *******************************************************************************/
+#if !defined __AVR_ATtiny85__
 void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod, 
 									   timer2_t timer2)
 {
 	// Temporary clock source variable 
 	unsigned char clockSource = 0;
 	
-	#if !defined(__AVR_ATmega32U4__)
+	#if !defined(__AVR_ATmega32U4__) && !defined(__AVR_ATtiny85__)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
@@ -813,7 +905,11 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		#if defined(__AVR_ATtiny85__)
+			WDTCR |= (1 << WDIE);	
+		#else
+			WDTCSR |= (1 << WDIE);	
+		#endif	
 	}
 	if (bod == BOD_OFF)	
 	{
@@ -830,7 +926,7 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 		
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 	
-	#if !defined(__AVR_ATmega32U4__)
+	#if !defined(__AVR_ATmega32U4__) && !defined(__AVR_ATtiny85__)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (clockSource & CS22) TCCR2B |= (1 << CS22);
@@ -839,6 +935,7 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 	}
 	#endif
 }
+#endif 
 
 /*******************************************************************************
 * Name: ISR (WDT_vect)
