@@ -123,14 +123,19 @@ class LowPowerClass
 			void	idle(period_t period, adc_t adc, timer4_t timer4, timer3_t timer3, 
 								 timer1_t timer1, timer0_t timer0, spi_t spi,
 					       usart1_t usart1, twi_t twi, usb_t usb);		
+		#elif defined __AVR_ATtiny85__	
+			void	idle(period_t period, adc_t adc, 
+								 timer1_t timer1, timer0_t timer0);		
 		#else
-			#error "Please ensure chosen MCU is either 328P, 32U4 or 2560."
+			#error "Please ensure chosen MCU is either 328P, 32U4, 2560 or tiny85."
 		#endif
 		void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2);
 		void	powerDown(period_t period, adc_t adc, bod_t bod);
 		void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
 		void	powerStandby(period_t period, adc_t adc, bod_t bod);
-		void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
+		#if !defined __AVR_ATtiny85__
+			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
+		#endif
 };
 
 extern LowPowerClass LowPower;
