@@ -1,9 +1,11 @@
 #ifndef LowPower_h
 #define LowPower_h
 
+#include "Arduino.h"
+
 enum period_t
 {
-	SLEEP_15Ms,
+	SLEEP_15MS,
 	SLEEP_30MS,	
 	SLEEP_60MS,
 	SLEEP_120MS,
@@ -106,31 +108,55 @@ enum usb_t
 	USB_ON
 };
 
+enum idle_t
+{
+	IDLE_0,
+	IDLE_1,
+	IDLE_2
+};
+
 class LowPowerClass
 {
 	public:
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) 
-			void	idle(period_t period, adc_t adc, timer2_t timer2, 
-								 timer1_t timer1, timer0_t timer0, spi_t spi,
-					       usart0_t usart0, twi_t twi);
-		#elif defined __AVR_ATmega2560__
-			void	idle(period_t period, adc_t adc, timer5_t timer5, 
-								 timer4_t timer4, timer3_t timer3, timer2_t timer2,
-			   				 timer1_t timer1, timer0_t timer0, spi_t spi,
-					       usart3_t usart3, usart2_t usart2, usart1_t usart1, 
-								 usart0_t usart0, twi_t twi);
-		#elif defined __AVR_ATmega32U4__	
-			void	idle(period_t period, adc_t adc, timer4_t timer4, timer3_t timer3, 
-								 timer1_t timer1, timer0_t timer0, spi_t spi,
-					       usart1_t usart1, twi_t twi, usb_t usb);		
+		#if defined (__AVR__)
+		
+			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) 
+				void	idle(period_t period, adc_t adc, timer2_t timer2, 
+						     timer1_t timer1, timer0_t timer0, spi_t spi,
+					         usart0_t usart0, twi_t twi);
+			#elif defined __AVR_ATmega2560__
+				void	idle(period_t period, adc_t adc, timer5_t timer5, 
+							 timer4_t timer4, timer3_t timer3, timer2_t timer2,
+							 timer1_t timer1, timer0_t timer0, spi_t spi,
+							 usart3_t usart3, usart2_t usart2, usart1_t usart1, 
+							 usart0_t usart0, twi_t twi);
+			#elif defined __AVR_ATmega32U4__	
+				void	idle(period_t period, adc_t adc, timer4_t timer4, 
+				             timer3_t timer3, timer1_t timer1, timer0_t timer0, 
+				             spi_t spi, usart1_t usart1, twi_t twi, usb_t usb);		
+			#else
+				#error "Please ensure chosen MCU is either 168, 328P, 32U4 or 2560."
+			#endif
+			void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2);
+			void	powerDown(period_t period, adc_t adc, bod_t bod);
+			void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
+			void	powerStandby(period_t period, adc_t adc, bod_t bod);
+			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
+		
+		#elif defined (__arm__)
+			
+			#if defined (__SAMD21G18A__)
+				void	idle(idle_t idleMode);
+				void	standby();
+			#else
+				#error "Please ensure chosen MCU is ATSAMD21G18A."
+			#endif
+		
 		#else
-			#error "Please ensure chosen MCU is either 328P, 32U4 or 2560."
+		
+			#error "Processor architecture is not supported."
+		
 		#endif
-		void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2);
-		void	powerDown(period_t period, adc_t adc, bod_t bod);
-		void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
-		void	powerStandby(period_t period, adc_t adc, bod_t bod);
-		void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
 };
 
 extern LowPowerClass LowPower;

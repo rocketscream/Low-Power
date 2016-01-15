@@ -16,6 +16,7 @@ powerDown	KEYWORD2
 powerSave	KEYWORD2
 powerStandby	KEYWORD2
 powerExtStandby	KEYWORD2
+standby	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
@@ -66,3 +67,6 @@ TWI_OFF	LITERAL1
 TWI_ON	LITERAL1
 USB_OFF	LITERAL1
 USB_ON	LITERAL1
+IDLE_0	LITERAL1
+IDLE_1	LITERAL1
+IDLE_2	LITERAL1

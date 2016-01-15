@@ -1,35 +1,44 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.30
-* Date: 22-05-2013
+* Version: 1.40
+* Date: 15-01-2016
+* Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
 *
-* This is a lightweight low power library for Arduino. Please check our wiki 
-* (www.rocketscream.com/wiki) for more information on using this piece of 
-* library.
+* This is a lightweight low power library for Arduino.
 *
 * This library is licensed under Creative Commons Attribution-ShareAlike 3.0 
 * Unported License.
 *
 * Revision  Description
 * ========  ===========
-* 1.30			Added support for ATMega168, ATMega2560, ATMega1280 & ATMega32U4.
-*						Tested to work with Arduino IDE 1.0.1 - 1.0.4.
-* 1.20			Remove typo error in idle method for checking whether Timer 0 was 
-*						turned off.
-*						Remove dependecy on WProgram.h which is not required.
-*						Tested to work with Arduino IDE 1.0.
-* 1.10			Added #ifndef for sleep_bod_disable() for compatibility with future
-*						Arduino IDE release.
+* 1.40		Added support for ATSAMD21G18A.
+* 			Library format compliant with Arduino IDE 1.5.x.
+* 1.30		Added support for ATMega168, ATMega2560, ATMega1280 & ATMega32U4.
+*			Tested to work with Arduino IDE 1.0.1 - 1.0.4.
+* 1.20		Remove typo error in idle method for checking whether Timer 0 was 
+*			turned off.
+*			Remove dependecy on WProgram.h which is not required.
+*			Tested to work with Arduino IDE 1.0.
+* 1.10		Added #ifndef for sleep_bod_disable() for compatibility with future
+*			Arduino IDE release.
 * 1.00      Initial public release.
 *******************************************************************************/
-#include <avr/sleep.h>
-#include <avr/wdt.h>
-#include <avr/power.h>
-#include <avr/interrupt.h>
+#if defined (__AVR__)
+	#include <avr/sleep.h>
+	#include <avr/wdt.h>
+	#include <avr/power.h>
+	#include <avr/interrupt.h>
+#elif defined (__arm__)
+
+#else
+	#error "Processor architecture is not supported."
+#endif
+
 #include "LowPower.h"
 
+#if defined (__AVR__)
 // Only Pico Power devices can change BOD settings through software
 #if defined __AVR_ATmega328P__
 #ifndef sleep_bod_disable
@@ -210,13 +219,13 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 /*******************************************************************************
 * Name: idle
 * Description: Putting ATmega32U4 into idle state. Please make sure you 
-*			         understand the implication and result of disabling module.
-*							 Take note that Timer 2 is not available and USART0
-*						   is replaced with USART1 on ATmega32U4.
+*			   understand the implication and result of disabling module.
+*			   Take note that Timer 2 is not available and USART0 is replaced 
+* 			   with USART1 on ATmega32U4.
 *
 * Argument  	Description
 * =========  	===========
-* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
 *				up resource:
 *				(a) SLEEP_15MS - 15 ms sleep
 *				(b) SLEEP_30MS - 30 ms sleep
@@ -268,9 +277,9 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 *******************************************************************************/
 #if defined __AVR_ATmega32U4__
 void	LowPowerClass::idle(period_t period, adc_t adc, 
-													timer4_t timer4, timer3_t timer3, 
-							            timer1_t timer1, timer0_t timer0,
-							            spi_t spi, usart1_t usart1,	twi_t twi, usb_t usb)
+							timer4_t timer4, timer3_t timer3, 
+							timer1_t timer1, timer0_t timer0,
+							spi_t spi, usart1_t usart1,	twi_t twi, usb_t usb)
 {
 	if (adc == ADC_OFF)	
 	{
@@ -282,10 +291,10 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 	if (timer3 == TIMER3_OFF)	power_timer3_disable();		
 	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
 	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
-	if (spi == SPI_OFF)				power_spi_disable();
+	if (spi == SPI_OFF)			power_spi_disable();
 	if (usart1 == USART1_OFF)	power_usart1_disable();
-	if (twi == TWI_OFF)				power_twi_disable();
-	if (usb == USB_OFF)				power_usb_disable();
+	if (twi == TWI_OFF)			power_twi_disable();
+	if (usb == USB_OFF)			power_usb_disable();
 	
 	if (period != SLEEP_FOREVER)
 	{
@@ -305,24 +314,24 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 	if (timer3 == TIMER3_OFF)	power_timer3_enable();	
 	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
 	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
-	if (spi == SPI_OFF)				power_spi_enable();
+	if (spi == SPI_OFF)			power_spi_enable();
 	if (usart1 == USART1_OFF)	power_usart1_enable();
-	if (twi == TWI_OFF)				power_twi_enable();
-	if (usb == USB_OFF)				power_usb_enable();
+	if (twi == TWI_OFF)			power_twi_enable();
+	if (usb == USB_OFF)			power_usb_enable();
 }
 #endif
 
 /*******************************************************************************
 * Name: idle
 * Description: Putting ATmega2560 & ATmega1280 into idle state. Please make sure 
-*			         you understand the implication and result of disabling module.
-*							 Take note that extra Timer 5, 4, 3 compared to an ATmega328P/168.
-*							 Also take note that extra USART 3, 2, 1 compared to an 
-*							 ATmega328P/168.
+*			   you understand the implication and result of disabling module.
+*			   Take note that extra Timer 5, 4, 3 compared to an ATmega328P/168.
+*			   Also take note that extra USART 3, 2, 1 compared to an 
+*			   ATmega328P/168.
 *
 * Argument  	Description
 * =========  	===========
-* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
 *				up resource:
 *				(a) SLEEP_15MS - 15 ms sleep
 *				(b) SLEEP_30MS - 30 ms sleep
@@ -391,10 +400,10 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 *******************************************************************************/
 #if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega1280__)
 void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5, 
-					                timer4_t timer4, timer3_t timer3, timer2_t timer2, 
-													timer1_t timer1, timer0_t timer0, spi_t spi, 
-													usart3_t usart3, usart2_t usart2, usart1_t usart1, 
-			                    usart0_t usart0, twi_t twi)
+					        timer4_t timer4, timer3_t timer3, timer2_t timer2, 
+							timer1_t timer1, timer0_t timer0, spi_t spi, 
+							usart3_t usart3, usart2_t usart2, usart1_t usart1, 
+			                usart0_t usart0, twi_t twi)
 {
 	// Temporary clock source variable 
 	unsigned char clockSource = 0;
@@ -424,12 +433,12 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (timer3 == TIMER3_OFF)	power_timer3_disable();	
 	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
 	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
-	if (spi == SPI_OFF)			  power_spi_disable();
+	if (spi == SPI_OFF)		    power_spi_disable();
 	if (usart3 == USART3_OFF)	power_usart3_disable();
 	if (usart2 == USART2_OFF)	power_usart2_disable();
 	if (usart1 == USART1_OFF)	power_usart1_disable();
 	if (usart0 == USART0_OFF)	power_usart0_disable();
-	if (twi == TWI_OFF)			  power_twi_disable();
+	if (twi == TWI_OFF)			power_twi_disable();
 	
 	if (period != SLEEP_FOREVER)
 	{
@@ -459,24 +468,24 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (timer3 == TIMER3_OFF)	power_timer3_enable();	
 	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
 	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
-	if (spi == SPI_OFF)			  power_spi_enable();
+	if (spi == SPI_OFF)			power_spi_enable();
 	if (usart3 == USART3_OFF)	power_usart3_enable();
 	if (usart2 == USART2_OFF)	power_usart2_enable();
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
-	if (twi == TWI_OFF)			  power_twi_enable();
+	if (twi == TWI_OFF)			power_twi_enable();
 }
 #endif
 
 /*******************************************************************************
 * Name: adcNoiseReduction
 * Description: Putting microcontroller into ADC noise reduction state. This is
-*			         a very useful state when using the ADC to achieve best and low 
+*			   a very useful state when using the ADC to achieve best and low 
 *              noise signal.
 *
 * Argument  	Description
 * =========  	===========
-* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
 *				up resource:
 *				(a) SLEEP_15MS - 15 ms sleep
 *				(b) SLEEP_30MS - 30 ms sleep
@@ -546,13 +555,13 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 /*******************************************************************************
 * Name: powerDown
 * Description: Putting microcontroller into power down state. This is
-*			         the lowest current consumption state. Use this together with 
-*			         external pin interrupt to wake up through external event 
-*			         triggering (example: RTC clockout pin, SD card detect pin).
+*			   the lowest current consumption state. Use this together with 
+*			   external pin interrupt to wake up through external event 
+*			   triggering (example: RTC clockout pin, SD card detect pin).
 *
 * Argument  	Description
 * =========  	===========
-* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
 *				up resource:
 *				(a) SLEEP_15MS - 15 ms sleep
 *				(b) SLEEP_30MS - 30 ms sleep
@@ -703,7 +712,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 *
 * Argument  	Description
 * =========  	===========
-* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
 *				up resource:
 *				(a) SLEEP_15MS - 15 ms sleep
 *				(b) SLEEP_30MS - 30 ms sleep
@@ -761,7 +770,7 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 *
 * Argument  	Description
 * =========  	===========
-* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
 *				up resource:
 *				(a) SLEEP_15MS - 15 ms sleep
 *				(b) SLEEP_30MS - 30 ms sleep
@@ -843,8 +852,8 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 /*******************************************************************************
 * Name: ISR (WDT_vect)
 * Description: Watchdog Timer interrupt service routine. This routine is 
-*		           required to allow automatic WDIF and WDIE bit clearance in 
-*			         hardware.
+*		       required to allow automatic WDIF and WDIE bit clearance in 
+*			   hardware.
 *
 *******************************************************************************/
 ISR (WDT_vect)
@@ -852,5 +861,54 @@ ISR (WDT_vect)
 	// WDIE & WDIF is cleared in hardware upon entering this ISR
 	wdt_disable();
 }
+
+#elif defined (__arm__)
+#if defined (__SAMD21G18A__)
+/*******************************************************************************
+* Name: standby
+* Description: Putting SAMD21G18A into idle mode. This is the lowest current 
+*              consumption mode. Requires separate handling of clock and 
+* 			   peripheral management (disabling and shutting down) to achieve 
+* 			   the desired current consumption.
+*
+* Argument  	Description
+* =========  	===========
+* 1. idleMode   Idle mode level (0, 1, 2) where IDLE_2 level provide lowest 
+* 				current consumption in this mode.
+* 
+*******************************************************************************/
+void	LowPowerClass::idle(idle_t idleMode)
+{
+	SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+	PM->SLEEP.reg = idleMode;
+	__DSB();
+	__WFI();
+}
+
+/*******************************************************************************
+* Name: standby
+* Description: Putting SAMD21G18A into standby mode. This is the lowest current 
+*              consumption mode. Use this together with the built-in RTC (use 
+*              RTCZero library) or external pin interrupt to wake up through 
+*              external event triggering.
+*
+* Argument  	Description
+* =========  	===========
+* 1. NIL
+* 
+*******************************************************************************/
+void	LowPowerClass::standby()
+{
+	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+	__DSB();
+	__WFI();
+}
+
+#else
+	#error "Please ensure chosen MCU is ATSAMD21G18A."
+#endif
+#else
+	#error "Processor architecture is not supported."
+#endif
 
 LowPowerClass LowPower;
