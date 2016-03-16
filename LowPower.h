@@ -137,11 +137,11 @@ class LowPowerClass
 			#else
 				#error "Please ensure chosen MCU is either 168, 328P, 32U4 or 2560."
 			#endif
-			void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2);
-			void	powerDown(period_t period, adc_t adc, bod_t bod);
-			void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
-			void	powerStandby(period_t period, adc_t adc, bod_t bod);
-			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2);
+			void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2) __attribute__((optimize("-O1")));
+			void	powerDown(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
+			void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
+			void	powerStandby(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
+			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
 		
 		#elif defined (__arm__)
 			

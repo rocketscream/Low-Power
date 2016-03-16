@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
 * Version: 1.40
-* Date: 15-01-2016
+* Date: 16-03-2016
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
@@ -13,6 +13,8 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.50      Fixed compiler optimization (Arduino IDE 1.6.x branch) on BOD enable
+*           function that causes the function to be over optimized.
 * 1.40		Added support for ATSAMD21G18A.
 * 			Library format compliant with Arduino IDE 1.5.x.
 * 1.30		Added support for ATMega168, ATMega2560, ATMega1280 & ATMega32U4.
