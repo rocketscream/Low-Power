@@ -480,6 +480,151 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 #endif
 
 /*******************************************************************************
+* Name: idle
+* Description: Putting ATmega256RFR2 into idle state. Please make sure 
+*			   you understand the implication and result of disabling module.
+*			   Take note that extra Timer 5, 4, 3 compared to an ATmega328P/168.
+*			   Also take note that extra USART 1 compared to an 
+*			   ATmega328P/168.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_8S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer5		Timer 5 module disable control:
+*				(a) TIMER5_OFF - Turn off Timer 5 module
+*				(b) TIMER5_ON - Leave Timer 5 module in its default state
+*
+* 4. timer4		Timer 4 module disable control:
+*				(a) TIMER4_OFF - Turn off Timer 4 module
+*				(b) TIMER4_ON - Leave Timer 4 module in its default state
+*
+* 5. timer3		Timer 3 module disable control:
+*				(a) TIMER3_OFF - Turn off Timer 3 module
+*				(b) TIMER3_ON - Leave Timer 3 module in its default state
+*
+* 6. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+* 7. timer1		Timer 1 module disable control:
+*				(a) TIMER1_OFF - Turn off Timer 1 module
+*				(b) TIMER1_ON - Leave Timer 1 module in its default state
+*
+* 8. timer0		Timer 0 module disable control:
+*				(a) TIMER0_OFF - Turn off Timer 0 module
+*				(b) TIMER0_ON - Leave Timer 0 module in its default state
+*
+* 9. spi		SPI module disable control:
+*				(a) SPI_OFF - Turn off SPI module
+*				(b) SPI_ON - Leave SPI module in its default state
+*
+* 10.usart1		USART1 module disable control:
+*				(a) USART1_OFF - Turn off USART1  module
+*				(b) USART1_ON - Leave USART1 module in its default state
+*
+* 11.usart0		USART0 module disable control:
+*				(a) USART0_OFF - Turn off USART0  module
+*				(b) USART0_ON - Leave USART0 module in its default state
+*
+* 12.twi		TWI module disable control:
+*				(a) TWI_OFF - Turn off TWI module
+*				(b) TWI_ON - Leave TWI module in its default state
+*
+*******************************************************************************/
+#if defined (__AVR_ATmega256RFR2__)
+void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5, 
+					                timer4_t timer4, timer3_t timer3, timer2_t timer2, 
+													timer1_t timer1, timer0_t timer0, spi_t spi, 
+													usart1_t usart1, 
+			                    usart0_t usart0, twi_t twi)
+{
+	// Temporary clock source variable 
+	unsigned char clockSource = 0;
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		if (TCCR2B & CS22) clockSource |= (1 << CS22);
+		if (TCCR2B & CS21) clockSource |= (1 << CS21);
+		if (TCCR2B & CS20) clockSource |= (1 << CS20);
+	
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+		
+		power_timer2_disable();
+	}
+	
+	if (adc == ADC_OFF)	
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+	
+	if (timer5 == TIMER5_OFF)	power_timer5_disable();	
+	if (timer4 == TIMER4_OFF)	power_timer4_disable();	
+	if (timer3 == TIMER3_OFF)	power_timer3_disable();	
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
+	if (spi == SPI_OFF)			  power_spi_disable();
+	if (usart1 == USART1_OFF)	power_usart1_disable();
+	if (usart0 == USART0_OFF)	power_usart0_disable();
+	if (twi == TWI_OFF)			  power_twi_disable();
+	
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);	
+	}
+	
+	lowPowerBodOn(SLEEP_MODE_IDLE);
+	
+	if (adc == ADC_OFF)
+	{
+		power_adc_enable();
+		ADCSRA |= (1 << ADEN);
+	}
+	
+	if (timer2 == TIMER2_OFF)
+	{
+		if (clockSource & CS22) TCCR2B |= (1 << CS22);
+		if (clockSource & CS21) TCCR2B |= (1 << CS21);
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+		
+		power_timer2_enable();
+	}
+
+	if (timer5 == TIMER5_OFF)	power_timer5_enable();	
+	if (timer4 == TIMER4_OFF)	power_timer4_enable();		
+	if (timer3 == TIMER3_OFF)	power_timer3_enable();	
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
+	if (spi == SPI_OFF)			  power_spi_enable();
+	if (usart1 == USART1_OFF)	power_usart1_enable();
+	if (usart0 == USART0_OFF)	power_usart0_enable();
+	if (twi == TWI_OFF)			  power_twi_enable();
+}
+#endif
+
+
+/*******************************************************************************
 * Name: adcNoiseReduction
 * Description: Putting microcontroller into ADC noise reduction state. This is
 *			   a very useful state when using the ADC to achieve best and low 
