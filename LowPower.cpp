@@ -103,6 +103,14 @@ do { 						\
 		#define power_timer4_enable()		(PRR1 &= (uint8_t)~(1 << PRTIM4))							
 	#endif
 #endif
+
+//Add missing macros for Arduino168 (ref github issue #14)
+#if defined __AVR_ATmega168__
+	#ifndef SLEEP_MODE_EXT_STANDBY
+		#define SLEEP_MODE_EXT_STANDBY (0x07<<1)
+	#endif
+#endif
+
   
 /*******************************************************************************
 * Name: idle
