@@ -154,7 +154,9 @@ do { 						\
 *				(b) TWI_ON - Leave TWI module in its default state
 *
 *******************************************************************************/
-#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__)
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) \
+	|| defined (__AVR_ATmega168A__) || defined (__AVR_ATmega168P__) \
+	|| defined (__AVR_ATmega168PA__) || defined (__AVR_ATmega168PB__)
 void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2, 
 							timer1_t timer1, timer0_t timer0,
 							spi_t spi, usart0_t usart0,	twi_t twi)
@@ -945,6 +947,7 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 *				(b) TIMER2_ON - Leave Timer 2 module in its default state
 *
 *******************************************************************************/
+#if defined (SLEEP_MODE_EXT_STANDBY)
 void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod, 
 									   timer2_t timer2)
 {
@@ -996,6 +999,7 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 	}
 	#endif
 }
+#endif
 
 /*******************************************************************************
 * Name: ISR (WDT_vect)
