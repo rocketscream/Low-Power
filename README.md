@@ -6,6 +6,7 @@ Version: 1.60
 Date: 01-04-2016
 
 Devices Supported:
+* ATtiny85
 * ATMega168
 * ATMega328P
 * ATMega32U4

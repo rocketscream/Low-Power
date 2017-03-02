@@ -72,6 +72,13 @@ enum spi_t
 	SPI_ON
 };
 
+enum usi_t
+{
+	USI_OFF,
+	USI_ON
+};
+
+
 enum usart0_t
 {
 	USART0_OFF,
@@ -140,6 +147,10 @@ class LowPowerClass
 				void	idle(period_t period, adc_t adc, timer4_t timer4, 
 				             timer3_t timer3, timer1_t timer1, timer0_t timer0, 
 				             spi_t spi, usart1_t usart1, twi_t twi, usb_t usb);		
+			#elif defined __AVR_ATtiny85__
+				void	idle(period_t period, adc_t adc,
+				             timer1_t timer1, timer0_t timer0,
+				             usi_t usi);
 			#else
 				#error "Please ensure chosen MCU is either 168, 328P, 32U4, 2560 or 256RFR2."
 			#endif
