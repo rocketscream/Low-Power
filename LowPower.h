@@ -147,7 +147,8 @@ class LowPowerClass
 				void	idle(period_t period, adc_t adc, timer4_t timer4, 
 				             timer3_t timer3, timer1_t timer1, timer0_t timer0, 
 				             spi_t spi, usart1_t usart1, twi_t twi, usb_t usb);		
-			#elif defined __AVR_ATtiny85__
+			#elif defined (__AVR_ATtiny85__) || defined (__AVR_ATtiny45__) || defined (__AVR_ATtiny25__) 
+				#define _ATTINY85_POWER_SCHEME
 				void	idle(period_t period, adc_t adc,
 				             timer1_t timer1, timer0_t timer0,
 				             usi_t usi);

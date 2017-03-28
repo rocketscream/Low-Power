@@ -259,7 +259,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 *				(b) USI_ON - Leave USI module in its default state
 
 *******************************************************************************/
-#if defined __AVR_ATtiny85__
+#if defined _ATTINY85_POWER_SCHEME
 void	LowPowerClass::idle(period_t period, adc_t adc,
 							timer1_t timer1, timer0_t timer0,
 							usi_t usi)
@@ -742,7 +742,7 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 	// Temporary clock source variable 
 	unsigned char clockSource = 0;
 	
-	#if !defined(__AVR_ATmega32U4__)  && !defined(__AVR_ATtiny85__)
+	#if !defined(__AVR_ATmega32U4__)  && !defined(_ATTINY85_POWER_SCHEME)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (TCCR2B & CS22) clockSource |= (1 << CS22);
@@ -761,7 +761,7 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-	#if  defined(__AVR_ATtiny85__)
+	#if  defined(_ATTINY85_POWER_SCHEME)
 		WDTCR |= (1 << WDIE);
 	#else
 		WDTCSR |= (1 << WDIE)	;
@@ -772,7 +772,7 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 	
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 	
-	#if !defined(__AVR_ATmega32U4__)  && !defined(__AVR_ATtiny85__)
+	#if !defined(__AVR_ATmega32U4__)  && !defined(_ATTINY85_POWER_SCHEME)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (clockSource & CS22) TCCR2B |= (1 << CS22);
@@ -823,7 +823,7 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-	#if  defined(__AVR_ATtiny85__)
+	#if  defined(_ATTINY85_POWER_SCHEME)
 		WDTCR |= (1 << WDIE);
 	#else
 		WDTCSR |= (1 << WDIE);
@@ -846,7 +846,7 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 }
 
-#if !defined(__AVR_ATtiny85__)
+#if !defined(_ATTINY85_POWER_SCHEME)
 /*******************************************************************************
 * Name: powerSave
 * Description: Putting microcontroller into power save state. This is
@@ -933,7 +933,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 	
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 	
-	#if !defined(__AVR_ATmega32U4__) && !defined(__AVR_ATtiny85__)
+	#if !defined(__AVR_ATmega32U4__) && !defined(_ATTINY85_POWER_SCHEME)
 	if (timer2 == TIMER2_OFF)
 	{
 		if (clockSource & CS22) TCCR2B |= (1 << CS22);
@@ -944,7 +944,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 }
 #endif
 
-#if !defined(__AVR_ATtiny85__)
+#if !defined(_ATTINY85_POWER_SCHEME)
 /*******************************************************************************
 * Name: powerStandby
 * Description: Putting microcontroller into power standby state. 
@@ -1002,7 +1002,7 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 }
 #endif
 
-#if !defined(__AVR_ATtiny85__)
+#if !defined(_ATTINY85_POWER_SCHEME)
 /*******************************************************************************
 * Name: powerExtStandby
 * Description: Putting microcontroller into power extended standby state. This 

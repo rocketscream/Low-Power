@@ -1,11 +1,13 @@
 ### Low-Power
 Lightweight low power library for Arduino.
 
-Version: 1.70
+Version: 1.80
 
-Date: 2017-03-02
+Date: 2017-03-27
 
 Devices Supported:
+* ATtiny25 
+* ATtiny45 
 * ATtiny85 
 * ATMega168
 * ATMega328P
@@ -17,4 +19,4 @@ Devices Supported:
 ####Notes:
 External interrupt during standby on ATSAMD21G18A requires a patch to the <a href="https://github.com/arduino/ArduinoCore-samd">Arduino SAMD Core</a> in order for it to work. Fix is provided by this particular <a href="https://github.com/arduino/ArduinoCore-samd/pull/90">pull request</a>.
 
-Should work for ATtiny45 and ATtiny25, just needs some trivial changes.
+Added support for Tiny45/25 
