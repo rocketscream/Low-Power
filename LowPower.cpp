@@ -437,7 +437,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
 	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
 	if (spi == SPI_OFF)		    power_spi_disable();
-	if (usart3 == USART3_OFF)	power_usart3_disable();
+	// if (usart3 == USART3_OFF)	power_usart3_disable();
 	if (usart2 == USART2_OFF)	power_usart2_disable();
 	if (usart1 == USART1_OFF)	power_usart1_disable();
 	if (usart0 == USART0_OFF)	power_usart0_disable();
@@ -472,7 +472,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
 	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
 	if (spi == SPI_OFF)			power_spi_enable();
-	if (usart3 == USART3_OFF)	power_usart3_enable();
+	// if (usart3 == USART3_OFF)	power_usart3_enable();
 	if (usart2 == USART2_OFF)	power_usart2_enable();
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
