@@ -15,6 +15,7 @@
 * ========  ===========
 * 1.70      Added support for ATTINY85, ATTINY84 and declare ISR_RUTINE weak for 
 *			your own ISR_RUTINE in your sketch
+*	    Add powerDownMoreTime function to sleep more than 8 seconds.
 * 1.60      Added support for ATmega256RFR2. Contributed by Rodmg. 
 * 1.50      Fixed compiler optimization (Arduino IDE 1.6.x branch) on BOD enable
 *           function that causes the function to be over optimized.
