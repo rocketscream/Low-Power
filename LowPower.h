@@ -1,8 +1,6 @@
 #ifndef LowPower_h
 #define LowPower_h
 
-#include "Arduino.h"
-
 enum period_t
 {
 	SLEEP_15MS,
