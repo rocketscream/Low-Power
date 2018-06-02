@@ -124,6 +124,10 @@ class LowPowerClass
 				void	idle(period_t period, adc_t adc, timer2_t timer2, 
 						     timer1_t timer1, timer0_t timer0, spi_t spi,
 					         usart0_t usart0, twi_t twi);
+			#elif defined __AVR_ATmega644P__ || defined (__AVR_ATmega1284P__)
+				void	idle(period_t period, adc_t adc, timer2_t timer2,
+							 timer1_t timer1, timer0_t timer0, spi_t spi,
+							 usart1_t usart1, usart0_t usart0, twi_t twi);
 			#elif defined __AVR_ATmega2560__
 				void	idle(period_t period, adc_t adc, timer5_t timer5, 
 							 timer4_t timer4, timer3_t timer3, timer2_t timer2,
