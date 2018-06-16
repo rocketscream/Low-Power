@@ -13,6 +13,8 @@
 idle	KEYWORD2
 adcNoiseReduction	KEYWORD2
 powerDown	KEYWORD2
+powerDownMoreTime KEYWORD2
+ISR_RUTINE KEYWORD2
 powerSave	KEYWORD2
 powerStandby	KEYWORD2
 powerExtStandby	KEYWORD2
