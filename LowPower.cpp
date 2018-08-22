@@ -1,6 +1,6 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.60
+* Version: 1.70
 * Date: 01-04-2016
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
@@ -13,6 +13,8 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.70      Added possibility to check whether it was the WDT interrupt which 
+*           woke the MCU. Contributed by Sysshad.
 * 1.60      Added support for ATmega256RFR2. Contributed by Rodmg. 
 * 1.50      Fixed compiler optimization (Arduino IDE 1.6.x branch) on BOD enable
 *           function that causes the function to be over optimized.
@@ -1120,6 +1122,22 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 }
 
 /*******************************************************************************
+ * Function to call to know if it was the WDT interrupt that woke the MCU
+ * Good if you have multiple wakeup sources like BOD, IO INT, etc... and
+ * wants to know which one occured.
+ * Note: Clears the event (sets it to false) so next call will return false
+ *       unless another WDT event occured meanwhile.
+ *******************************************************************************/
+bool LowPowerClass::getWDTEventStatus()
+{
+	bool ret = LowPower._wdtEvent;
+	
+	LowPower._wdtEvent = false;
+
+	return ret;
+}
+
+/*******************************************************************************
 * Name: ISR (WDT_vect)
 * Description: Watchdog Timer interrupt service routine. This routine is 
 *		       required to allow automatic WDIF and WDIE bit clearance in 
@@ -1130,6 +1148,9 @@ ISR (WDT_vect)
 {
 	// WDIE & WDIF is cleared in hardware upon entering this ISR
 	wdt_disable();
+
+	// Inform that an WDT event occured!
+	LowPower._wdtEvent = true;
 }
 
 #elif defined (__arm__)
