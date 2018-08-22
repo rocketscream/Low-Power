@@ -119,7 +119,8 @@ class LowPowerClass
 {
 	public:
 		#if defined (__AVR__)
-		
+		volatile bool _wdtEvent = false;
+
 			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) 
 				void	idle(period_t period, adc_t adc, timer2_t timer2, 
 						     timer1_t timer1, timer0_t timer0, spi_t spi,
@@ -152,7 +153,8 @@ class LowPowerClass
 			void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
 			void	powerStandby(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
 			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
-		
+			bool  getWDTEventStatus();
+
 		#elif defined (__arm__)
 			
 			#if defined (__SAMD21G18A__)
