@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.60
-* Date: 01-04-2016
+* Version: 1.70
+* Date: 04-06-2018
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
@@ -13,6 +13,8 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.70      Added support for ATmega644P and ATmega1284P.
+*           Contributed by alexreinert. 
 * 1.60      Added support for ATmega256RFR2. Contributed by Rodmg. 
 * 1.50      Fixed compiler optimization (Arduino IDE 1.6.x branch) on BOD enable
 *           function that causes the function to be over optimized.
