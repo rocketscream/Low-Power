@@ -120,7 +120,8 @@ class LowPowerClass
 	public:
 		#if defined (__AVR__)
 		
-			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) 
+			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168A__) \
+				|| defined (__AVR_ATmega168P__) || defined (__AVR_ATmega168PA__) || defined (__AVR_ATmega168PB__)
 				void	idle(period_t period, adc_t adc, timer2_t timer2, 
 						     timer1_t timer1, timer0_t timer0, spi_t spi,
 					         usart0_t usart0, twi_t twi);
@@ -145,13 +146,15 @@ class LowPowerClass
 				             timer3_t timer3, timer1_t timer1, timer0_t timer0, 
 				             spi_t spi, usart1_t usart1, twi_t twi, usb_t usb);		
 			#else
-				#error "Please ensure chosen MCU is either 168, 328P, 32U4, 2560 or 256RFR2."
+				#error "Please ensure chosen MCU is either 168[A/P/PA/PB], 328P, 32U4, 2560 or 256RFR2."
 			#endif
 			void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2) __attribute__((optimize("-O1")));
 			void	powerDown(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
 			void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
 			void	powerStandby(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
-			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
+			#if defined(SLEEP_MODE_EXT_STANDBY)
+				void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
+			#endif
 		
 		#elif defined (__arm__)
 			
