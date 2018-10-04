@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
 * Version: 1.80
-* Date: 04-oct-2018
+* Date: 04-10-2018
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
@@ -13,7 +13,8 @@
 *
 * Revision  Description
 * ========  ===========
-* 1.80      Added support for ATmega88 and ATmega168P. powerExtStandby() modified because not supported on Atmega88 / Atmega168
+* 1.80      Added support for ATmega88 and ATmega168P. PowerExtStandby()
+*           modified because not supported on Atmega88 / Atmega168
 *           Contributed by mrguen.
 * 1.70      Added support for ATmega644P and ATmega1284P.
 *           Contributed by alexreinert.
