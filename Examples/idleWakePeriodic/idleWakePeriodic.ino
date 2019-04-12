@@ -3,7 +3,7 @@
 
 void setup()
 {
-  // No setup is required for this library
+  LowPower.pullupAllPins(); // This should appear before any calls to pinMode
 }
 
 void loop() 
@@ -33,4 +33,3 @@ void loop()
   // Do something here
   // Example: Read sensor, data logging, data transmission.
 }
-
