@@ -238,7 +238,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 * 1. NIL
 *
 *******************************************************************************/
-void	pullupAllPins()
+void	LowPowerClass::pullupAllPins()
 {
 	for (uint8_t i = 0; i < 23; i++)
 	{
@@ -367,7 +367,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 * 1. NIL
 *
 *******************************************************************************/
-void	pullupAllPins()
+void	LowPowerClass::pullupAllPins()
 {
 	for (uint8_t i = 0; i < 26; i++)
 	{
@@ -514,7 +514,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 * 1. NIL
 *
 *******************************************************************************/
-void	pullupAllPins()
+void	LowPowerClass::pullupAllPins()
 {
 	for (uint8_t i = 0; i < 32; i++)
 	{
@@ -694,7 +694,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 * 1. NIL
 *
 *******************************************************************************/
-void	pullupAllPins()
+void	LowPowerClass::pullupAllPins()
 {
 	for (uint8_t i = 0; i < 86; i++)
 	{
@@ -863,7 +863,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 * 1. NIL
 *
 *******************************************************************************/
-void	pullupAllPins()
+void	LowPowerClass::pullupAllPins()
 {
 	for (uint8_t i = 0; i < 38; i++)
 	{
