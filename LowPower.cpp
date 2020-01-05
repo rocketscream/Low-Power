@@ -1,6 +1,6 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.80
+* Version: 1.90
 * Date: 04-10-2018
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
@@ -13,6 +13,7 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.90      Added support for ATmega328PB and ATmega168PB.
 * 1.80      Added support for ATmega88 and ATmega168P. PowerExtStandby()
 *           modified because not supported on Atmega88 / Atmega168
 *           Contributed by mrguen.
@@ -48,7 +49,7 @@
 
 #if defined (__AVR__)
 // Only Pico Power devices can change BOD settings through software
-#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 #ifndef sleep_bod_disable
 #define sleep_bod_disable() 										\
 do { 																\
@@ -78,7 +79,7 @@ do { 						\
 } while (0);
 
 // Only Pico Power devices can change BOD settings through software
-#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 #define	lowPowerBodOff(mode)\
 do { 						\
       set_sleep_mode(mode); \
@@ -159,7 +160,7 @@ do { 						\
 *				(b) TWI_ON - Leave TWI module in its default state
 *
 *******************************************************************************/
-#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega88__)
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 							timer1_t timer1, timer0_t timer0,
 							spi_t spi, usart0_t usart0,	twi_t twi)
@@ -871,7 +872,7 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 	}
 	if (bod == BOD_OFF)
 	{
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 			lowPowerBodOff(SLEEP_MODE_PWR_DOWN);
 		#else
 			lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
@@ -958,7 +959,7 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 
 	if (bod == BOD_OFF)
 	{
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 			lowPowerBodOff(SLEEP_MODE_PWR_SAVE);
 		#else
 			lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
@@ -1023,7 +1024,7 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 
 	if (bod == BOD_OFF)
 	{
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 			lowPowerBodOff(SLEEP_MODE_STANDBY);
 		#else
 			lowPowerBodOn(SLEEP_MODE_STANDBY);
@@ -1106,7 +1107,7 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 	#else
 		if (bod == BOD_OFF)
 		{
-			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega328PB__) || defined (__AVR_ATmega168PB__) 
 				lowPowerBodOff(SLEEP_MODE_EXT_STANDBY);
 			#else
 				lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
