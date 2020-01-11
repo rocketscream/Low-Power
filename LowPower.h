@@ -3,6 +3,24 @@
 
 #include "Arduino.h"
 
+#if defined (__AVR__)
+	#include <avr/sleep.h>
+	#include <avr/wdt.h>
+	#include <avr/power.h>
+	#include <avr/interrupt.h>
+#elif defined (__arm__)
+
+#else
+	#error "Processor architecture is not supported."
+#endif
+
+#if defined(__AVR_ATtiny167__) || defined(__AVR_ATtiny87__)
+// one sleep mode is missing from avr/sleep.h
+        #if !defined(SLEEP_MODE_PWR_SAVE)
+                   #define SLEEP_MODE_PWR_SAVE (_BV(SM0) | _BV(SM1))
+        #endif
+#endif
+
 enum period_t
 {
 	SLEEP_15MS,
@@ -115,10 +133,26 @@ enum idle_t
 	IDLE_2
 };
 
+enum usi_t
+{
+        USI_OFF,
+        USI_ON
+};
+
+enum lin_t
+{
+        LIN_OFF,
+        LIN_ON
+};
+
+
 class LowPowerClass
 {
 	public:
 		#if defined (__AVR__)
+
+                                void    idle(period_t period); 
+
 
 			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega88__)
 				void	idle(period_t period, adc_t adc, timer2_t timer2,
@@ -128,6 +162,11 @@ class LowPowerClass
 				void	idle(period_t period, adc_t adc, timer2_t timer2,
 							 timer1_t timer1, timer0_t timer0, spi_t spi,
 							 usart1_t usart1, usart0_t usart0, twi_t twi);
+			   #if defined (__AVR_ATmega1284P__) 
+			        void	idle(period_t period, adc_t adc, timer3_t timer3, timer2_t timer2,
+							 timer1_t timer1, timer0_t timer0, spi_t spi,
+							 usart1_t usart1, usart0_t usart0, twi_t twi);
+			   #endif
 			#elif defined __AVR_ATmega2560__
 				void	idle(period_t period, adc_t adc, timer5_t timer5,
 							 timer4_t timer4, timer3_t timer3, timer2_t timer2,
@@ -144,14 +183,51 @@ class LowPowerClass
 				void	idle(period_t period, adc_t adc, timer4_t timer4,
 				             timer3_t timer3, timer1_t timer1, timer0_t timer0,
 				             spi_t spi, usart1_t usart1, twi_t twi, usb_t usb);
+			#elif defined(__AVR_ATtiny24__) \
+			  || defined(__AVR_ATtiny24A__) \
+			  || defined(__AVR_ATtiny44__) \
+			  || defined(__AVR_ATtiny44A__) \
+			  || defined(__AVR_ATtiny84__) \
+			  || defined(__AVR_ATtiny84A__) \
+			  || defined(__AVR_ATtiny25__)	\
+			  || defined(__AVR_ATtiny45__)	\
+			  || defined(__AVR_ATtiny85__)	\
+			  || defined(__AVR_ATtiny261__) \
+			  || defined(__AVR_ATtiny261A__) \
+			  || defined(__AVR_ATtiny461__) \
+			  || defined(__AVR_ATtiny461A__) \
+			  || defined(__AVR_ATtiny861__)	 \
+			  || defined(__AVR_ATtiny861A__) \
+			  || defined(__AVR_ATtiny43U__)
+				void	idle(period_t period, adc_t adc, 
+					     timer1_t timer1, timer0_t timer0, usi_t usi);
+                        #elif defined(__AVR_ATtiny167__) || defined(__AVR_ATtiny87__)
+				void	idle(period_t period, adc_t adc, 
+					     timer1_t timer1, timer0_t timer0, spi_t spi, usi_t usi, lin_t lin);
 			#else
-				#error "Please ensure chosen MCU is either 88, 168, 168P, 328P, 32U4, 2560 or 256RFR2."
+				#warning "MCU type not yet supported, so there is only a minimal 'idle' method"
 			#endif
-			void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2) __attribute__((optimize("-O1")));
+			#if defined(SLEEP_MODE_ADC)
+			  void	adcNoiseReduction(period_t period, adc_t adc, timer2_t timer2) __attribute__((optimize("-O1")));
+			#else
+                          #warning "MCU type does not support ADC sleep mode, so there is no 'adcNoiceReduction' method"
+                        #endif
 			void	powerDown(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
-			void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
-			void	powerStandby(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
-			void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
+			#if defined(SLEEP_MODE_PWR_SAVE)
+			  void	powerSave(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
+			#else
+                          #warning "MCU type does not support power save sleep mode, so there is no 'powerSave' method"
+                        #endif
+			#if defined(SLEEP_MODE_STANDBY)
+			  void	powerStandby(period_t period, adc_t adc, bod_t bod) __attribute__((optimize("-O1")));
+			#else
+                          #warning "MCU type does not support standby mode, so there is no 'powerStandby' method"
+                        #endif
+			#if defined(SLEEP_MODE_EXT_STANDBY)
+			  void	powerExtStandby(period_t period, adc_t adc, bod_t bod, timer2_t timer2) __attribute__((optimize("-O1")));
+			#else
+                          #warning "MCU type does not support extended standby mode, so there is no 'powerExtStandby' method"
+                        #endif
 
 		#elif defined (__arm__)
 
