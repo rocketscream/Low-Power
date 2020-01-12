@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.80
-* Date: 04-10-2018
+* Version: 1.91
+* Date: 12-01-2020
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
@@ -13,6 +13,7 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.91      Putting ATmega328P back again. Sigh!
 * 1.90      Added minimal idle method with just the period argument.
 *           Just give a compile-time warning when MCU type is not supported yet  instead of giving an error
 *           and point out that 'idle' is only supported minimally.
@@ -148,6 +149,120 @@ void	LowPowerClass::idle(period_t period)
 	lowPowerBodOn(SLEEP_MODE_IDLE);
 }
 
+/*******************************************************************************
+* Name: idle
+* Description: Putting ATmega328P/168 into idle state. Please make sure you
+*			         understand the implication and result of disabling module.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period   Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_8S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+* 4. timer1		Timer 1 module disable control:
+*				(a) TIMER1_OFF - Turn off Timer 1 module
+*				(b) TIMER1_ON - Leave Timer 1 module in its default state
+*
+* 5. timer0		Timer 0 module disable control:
+*				(a) TIMER0_OFF - Turn off Timer 0 module
+*				(b) TIMER0_ON - Leave Timer 0 module in its default state
+*
+* 6. spi		SPI module disable control:
+*				(a) SPI_OFF - Turn off SPI module
+*				(b) SPI_ON - Leave SPI module in its default state
+*
+* 7. usart0		USART0 module disable control:
+*				(a) USART0_OFF - Turn off USART0  module
+*				(b) USART0_ON - Leave USART0 module in its default state
+*
+* 8. twi		TWI module disable control:
+*				(a) TWI_OFF - Turn off TWI module
+*				(b) TWI_ON - Leave TWI module in its default state
+*
+*******************************************************************************/
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega88__)
+void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
+							timer1_t timer1, timer0_t timer0,
+							spi_t spi, usart0_t usart0,	twi_t twi)
+{
+	// Temporary clock source variable
+	unsigned char clockSource = 0;
+
+	if (timer2 == TIMER2_OFF)
+	{
+		if (TCCR2B & CS22) clockSource |= (1 << CS22);
+		if (TCCR2B & CS21) clockSource |= (1 << CS21);
+		if (TCCR2B & CS20) clockSource |= (1 << CS20);
+
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+
+		power_timer2_disable();
+	}
+
+	if (adc == ADC_OFF)
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
+	if (spi == SPI_OFF)			power_spi_disable();
+	if (usart0 == USART0_OFF)	power_usart0_disable();
+	if (twi == TWI_OFF)			power_twi_disable();
+
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);
+	}
+
+	lowPowerBodOn(SLEEP_MODE_IDLE);
+
+	if (adc == ADC_OFF)
+	{
+		power_adc_enable();
+		ADCSRA |= (1 << ADEN);
+	}
+
+	if (timer2 == TIMER2_OFF)
+	{
+		if (clockSource & CS22) TCCR2B |= (1 << CS22);
+		if (clockSource & CS21) TCCR2B |= (1 << CS21);
+		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+
+		power_timer2_enable();
+	}
+
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
+	if (spi == SPI_OFF)			power_spi_enable();
+	if (usart0 == USART0_OFF)	power_usart0_enable();
+	if (twi == TWI_OFF)			power_twi_enable();
+}
+#endif
 
 /*******************************************************************************
 * Name: idle
