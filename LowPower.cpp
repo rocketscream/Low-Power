@@ -222,6 +222,30 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 	if (usart0 == USART0_OFF)	power_usart0_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
 }
+
+/*******************************************************************************
+* Name: pullupAllPins
+* Description: If some pins are unused, it is recommended to ensure
+* that these pins have a defined level. Even though most of the digital
+* inputs are disabled in the deep sleep mode floating inputs should be
+* avoided to reduce current consumption in all other modes where the
+* digital inputs are enabled (reset, active mode and idle mode).The
+* simplest method to ensure a defined level of an unused pin, is to
+* enable the internal pull-up. 
+*
+* Argument  	Description
+* =========  	===========
+* 1. NIL
+*
+*******************************************************************************/
+void	LowPowerClass::pullupAllPins()
+{
+	for (uint8_t i = 0; i < 23; i++)
+	{
+		pinMode(i, INPUT_PULLUP);
+	}
+	
+}
 #endif
 
 /*******************************************************************************
@@ -326,6 +350,30 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
 	if (usb == USB_OFF)			power_usb_enable();
+}
+
+/*******************************************************************************
+* Name: pullupAllPins
+* Description: If some pins are unused, it is recommended to ensure
+* that these pins have a defined level. Even though most of the digital
+* inputs are disabled in the deep sleep mode floating inputs should be
+* avoided to reduce current consumption in all other modes where the
+* digital inputs are enabled (reset, active mode and idle mode).The
+* simplest method to ensure a defined level of an unused pin, is to
+* enable the internal pull-up. 
+*
+* Argument  	Description
+* =========  	===========
+* 1. NIL
+*
+*******************************************************************************/
+void	LowPowerClass::pullupAllPins()
+{
+	for (uint8_t i = 0; i < 26; i++)
+	{
+		pinMode(i, INPUT_PULLUP);
+	}
+	
 }
 #endif
 
@@ -446,6 +494,31 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
+}
+
+
+/*******************************************************************************
+* Name: pullupAllPins
+* Description: If some pins are unused, it is recommended to ensure
+* that these pins have a defined level. Even though most of the digital
+* inputs are disabled in the deep sleep mode floating inputs should be
+* avoided to reduce current consumption in all other modes where the
+* digital inputs are enabled (reset, active mode and idle mode).The
+* simplest method to ensure a defined level of an unused pin, is to
+* enable the internal pull-up. 
+*
+* Argument  	Description
+* =========  	===========
+* 1. NIL
+*
+*******************************************************************************/
+void	LowPowerClass::pullupAllPins()
+{
+	for (uint8_t i = 0; i < 32; i++)
+	{
+		pinMode(i, INPUT_PULLUP);
+	}
+	
 }
 #endif
 
@@ -601,6 +674,30 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (usart0 == USART0_OFF)	power_usart0_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
 }
+
+/*******************************************************************************
+* Name: pullupAllPins
+* Description: If some pins are unused, it is recommended to ensure
+* that these pins have a defined level. Even though most of the digital
+* inputs are disabled in the deep sleep mode floating inputs should be
+* avoided to reduce current consumption in all other modes where the
+* digital inputs are enabled (reset, active mode and idle mode).The
+* simplest method to ensure a defined level of an unused pin, is to
+* enable the internal pull-up. 
+*
+* Argument  	Description
+* =========  	===========
+* 1. NIL
+*
+*******************************************************************************/
+void	LowPowerClass::pullupAllPins()
+{
+	for (uint8_t i = 0; i < 86; i++)
+	{
+		pinMode(i, INPUT_PULLUP);
+	}
+	
+}
 #endif
 
 /*******************************************************************************
@@ -742,6 +839,31 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
 	if (twi == TWI_OFF)			  power_twi_enable();
+}
+
+
+/*******************************************************************************
+* Name: pullupAllPins
+* Description: If some pins are unused, it is recommended to ensure
+* that these pins have a defined level. Even though most of the digital
+* inputs are disabled in the deep sleep mode floating inputs should be
+* avoided to reduce current consumption in all other modes where the
+* digital inputs are enabled (reset, active mode and idle mode).The
+* simplest method to ensure a defined level of an unused pin, is to
+* enable the internal pull-up. 
+*
+* Argument  	Description
+* =========  	===========
+* 1. NIL
+*
+*******************************************************************************/
+void	LowPowerClass::pullupAllPins()
+{
+	for (uint8_t i = 0; i < 38; i++)
+	{
+		pinMode(i, INPUT_PULLUP);
+	}
+	
 }
 #endif
 
