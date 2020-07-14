@@ -1,26 +1,33 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.60
-* Date: 01-04-2016
+* Version: 1.81
+* Date: 21-01-2020
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
 *
 * This is a lightweight low power library for Arduino.
 *
-* This library is licensed under Creative Commons Attribution-ShareAlike 3.0 
+* This library is licensed under Creative Commons Attribution-ShareAlike 3.0
 * Unported License.
 *
 * Revision  Description
 * ========  ===========
-* 1.60      Added support for ATmega256RFR2. Contributed by Rodmg. 
+* 1.81      Fixed timer 2 settings incorrectly restored after sleep.
+*           Contributed by rwared11.
+* 1.80      Added support for ATmega88 and ATmega168P. PowerExtStandby()
+*           modified because not supported on Atmega88 / Atmega168
+*           Contributed by mrguen.
+* 1.70      Added support for ATmega644P and ATmega1284P.
+*           Contributed by alexreinert.
+* 1.60      Added support for ATmega256RFR2. Contributed by Rodmg.
 * 1.50      Fixed compiler optimization (Arduino IDE 1.6.x branch) on BOD enable
 *           function that causes the function to be over optimized.
 * 1.40		Added support for ATSAMD21G18A.
 * 			Library format compliant with Arduino IDE 1.5.x.
 * 1.30		Added support for ATMega168, ATMega2560, ATMega1280 & ATMega32U4.
 *			Tested to work with Arduino IDE 1.0.1 - 1.0.4.
-* 1.20		Remove typo error in idle method for checking whether Timer 0 was 
+* 1.20		Remove typo error in idle method for checking whether Timer 0 was
 *			turned off.
 *			Remove dependecy on WProgram.h which is not required.
 *			Tested to work with Arduino IDE 1.0.
@@ -43,7 +50,7 @@
 
 #if defined (__AVR__)
 // Only Pico Power devices can change BOD settings through software
-#if defined __AVR_ATmega328P__
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
 #ifndef sleep_bod_disable
 #define sleep_bod_disable() 										\
 do { 																\
@@ -73,7 +80,7 @@ do { 						\
 } while (0);
 
 // Only Pico Power devices can change BOD settings through software
-#if defined __AVR_ATmega328P__
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
 #define	lowPowerBodOff(mode)\
 do { 						\
       set_sleep_mode(mode); \
@@ -89,24 +96,24 @@ do { 						\
 
 // Some macros is still missing from AVR GCC distribution for ATmega32U4
 #if defined __AVR_ATmega32U4__
-	// Timer 4 PRR bit is currently not defined in iom32u4.h 
+	// Timer 4 PRR bit is currently not defined in iom32u4.h
 	#ifndef PRTIM4
 		#define PRTIM4 4
 	#endif
 
 	// Timer 4 power reduction macro is not defined currently in power.h
 	#ifndef power_timer4_disable
-		#define power_timer4_disable()	(PRR1 |= (uint8_t)(1 << PRTIM4)) 									
+		#define power_timer4_disable()	(PRR1 |= (uint8_t)(1 << PRTIM4))
 	#endif
 
 	#ifndef power_timer4_enable
-		#define power_timer4_enable()		(PRR1 &= (uint8_t)~(1 << PRTIM4))							
+		#define power_timer4_enable()		(PRR1 &= (uint8_t)~(1 << PRTIM4))
 	#endif
 #endif
-  
+
 /*******************************************************************************
 * Name: idle
-* Description: Putting ATmega328P/168 into idle state. Please make sure you 
+* Description: Putting ATmega328P/168 into idle state. Please make sure you
 *			         understand the implication and result of disabling module.
 *
 * Argument  	Description
@@ -154,65 +161,63 @@ do { 						\
 *				(b) TWI_ON - Leave TWI module in its default state
 *
 *******************************************************************************/
-#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__)
-void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2, 
+#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega88__)
+void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 							timer1_t timer1, timer0_t timer0,
 							spi_t spi, usart0_t usart0,	twi_t twi)
 {
-	// Temporary clock source variable 
+	// Temporary clock source variable
 	unsigned char clockSource = 0;
-	
+
 	if (timer2 == TIMER2_OFF)
 	{
-		if (TCCR2B & CS22) clockSource |= (1 << CS22);
-		if (TCCR2B & CS21) clockSource |= (1 << CS21);
-		if (TCCR2B & CS20) clockSource |= (1 << CS20);
-	
+		// Store current setting
+        clockSource = TCCR2B;
+
 		// Remove the clock source to shutdown Timer2
 		TCCR2B &= ~(1 << CS22);
 		TCCR2B &= ~(1 << CS21);
 		TCCR2B &= ~(1 << CS20);
-		
+
 		power_timer2_disable();
 	}
-	
-	if (adc == ADC_OFF)	
+
+	if (adc == ADC_OFF)
 	{
 		ADCSRA &= ~(1 << ADEN);
 		power_adc_disable();
 	}
-	
-	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
+
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
 	if (spi == SPI_OFF)			power_spi_disable();
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
+
 	lowPowerBodOn(SLEEP_MODE_IDLE);
-	
+
 	if (adc == ADC_OFF)
 	{
 		power_adc_enable();
 		ADCSRA |= (1 << ADEN);
 	}
-	
+
 	if (timer2 == TIMER2_OFF)
 	{
-		if (clockSource & CS22) TCCR2B |= (1 << CS22);
-		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);
-		
+        // Restore previous setting
+        TCCR2B = clockSource;
+        
 		power_timer2_enable();
 	}
-	
-	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
+
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
 	if (spi == SPI_OFF)			power_spi_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
@@ -221,9 +226,9 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 
 /*******************************************************************************
 * Name: idle
-* Description: Putting ATmega32U4 into idle state. Please make sure you 
+* Description: Putting ATmega32U4 into idle state. Please make sure you
 *			   understand the implication and result of disabling module.
-*			   Take note that Timer 2 is not available and USART0 is replaced 
+*			   Take note that Timer 2 is not available and USART0 is replaced
 * 			   with USART1 on ATmega32U4.
 *
 * Argument  	Description
@@ -279,44 +284,44 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 *				(b) USB_ON - Leave USB module in its default state
 *******************************************************************************/
 #if defined __AVR_ATmega32U4__
-void	LowPowerClass::idle(period_t period, adc_t adc, 
-							timer4_t timer4, timer3_t timer3, 
+void	LowPowerClass::idle(period_t period, adc_t adc,
+							timer4_t timer4, timer3_t timer3,
 							timer1_t timer1, timer0_t timer0,
 							spi_t spi, usart1_t usart1,	twi_t twi, usb_t usb)
 {
-	if (adc == ADC_OFF)	
+	if (adc == ADC_OFF)
 	{
 		ADCSRA &= ~(1 << ADEN);
 		power_adc_disable();
 	}
 
-	if (timer4 == TIMER4_OFF)	power_timer4_disable();	
-	if (timer3 == TIMER3_OFF)	power_timer3_disable();		
-	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
+	if (timer4 == TIMER4_OFF)	power_timer4_disable();
+	if (timer3 == TIMER3_OFF)	power_timer3_disable();
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
 	if (spi == SPI_OFF)			power_spi_disable();
 	if (usart1 == USART1_OFF)	power_usart1_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
 	if (usb == USB_OFF)			power_usb_disable();
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
+
 	lowPowerBodOn(SLEEP_MODE_IDLE);
-	
+
 	if (adc == ADC_OFF)
 	{
 		power_adc_enable();
 		ADCSRA |= (1 << ADEN);
 	}
 
-	if (timer4 == TIMER4_OFF)	power_timer4_enable();	
-	if (timer3 == TIMER3_OFF)	power_timer3_enable();	
-	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
+	if (timer4 == TIMER4_OFF)	power_timer4_enable();
+	if (timer3 == TIMER3_OFF)	power_timer3_enable();
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
 	if (spi == SPI_OFF)			power_spi_enable();
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (twi == TWI_OFF)			power_twi_enable();
@@ -326,10 +331,130 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 
 /*******************************************************************************
 * Name: idle
-* Description: Putting ATmega2560 & ATmega1280 into idle state. Please make sure 
+* Description: Putting ATmega644P & ATmega1284P into idle state. Please make sure
+*			   you understand the implication and result of disabling module.
+*			   Take note that extra USART 1 compared to an ATmega328P/168.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_8S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer2		Timer 2 module disable control:
+*				(a) TIMER2_OFF - Turn off Timer 2 module
+*				(b) TIMER2_ON - Leave Timer 2 module in its default state
+*
+* 4. timer1		Timer 1 module disable control:
+*				(a) TIMER1_OFF - Turn off Timer 1 module
+*				(b) TIMER1_ON - Leave Timer 1 module in its default state
+*
+* 5. timer0		Timer 0 module disable control:
+*				(a) TIMER0_OFF - Turn off Timer 0 module
+*				(b) TIMER0_ON - Leave Timer 0 module in its default state
+*
+* 6. spi		SPI module disable control:
+*				(a) SPI_OFF - Turn off SPI module
+*				(b) SPI_ON - Leave SPI module in its default state
+*
+* 7. usart1		USART1 module disable control:
+*				(a) USART1_OFF - Turn off USART1  module
+*				(b) USART1_ON - Leave USART1 module in its default state
+*
+* 8. usart0		USART0 module disable control:
+*				(a) USART0_OFF - Turn off USART0  module
+*				(b) USART0_ON - Leave USART0 module in its default state
+*
+* 9. twi		TWI module disable control:
+*				(a) TWI_OFF - Turn off TWI module
+*				(b) TWI_ON - Leave TWI module in its default state
+*
+*******************************************************************************/
+#if defined (__AVR_ATmega644P__) || defined (__AVR_ATmega1284P__)
+void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
+							timer1_t timer1, timer0_t timer0, spi_t spi,
+							usart1_t usart1, usart0_t usart0, twi_t twi)
+{
+	// Temporary clock source variable
+	unsigned char clockSource = 0;
+
+	if (timer2 == TIMER2_OFF)
+	{
+		// Store current setting
+        clockSource = TCCR2B;
+
+		// Remove the clock source to shutdown Timer2
+		TCCR2B &= ~(1 << CS22);
+		TCCR2B &= ~(1 << CS21);
+		TCCR2B &= ~(1 << CS20);
+
+		power_timer2_disable();
+	}
+
+	if (adc == ADC_OFF)
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
+	if (spi == SPI_OFF)		    power_spi_disable();
+	if (usart1 == USART1_OFF)	power_usart1_disable();
+	if (usart0 == USART0_OFF)	power_usart0_disable();
+	if (twi == TWI_OFF)			power_twi_disable();
+
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		WDTCSR |= (1 << WDIE);
+	}
+
+	lowPowerBodOn(SLEEP_MODE_IDLE);
+
+	if (adc == ADC_OFF)
+	{
+		power_adc_enable();
+		ADCSRA |= (1 << ADEN);
+	}
+
+	if (timer2 == TIMER2_OFF)
+	{
+        // Restore previous setting
+        TCCR2B = clockSource;
+
+		power_timer2_enable();
+	}
+
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
+	if (spi == SPI_OFF)			power_spi_enable();
+	if (usart1 == USART1_OFF)	power_usart1_enable();
+	if (usart0 == USART0_OFF)	power_usart0_enable();
+	if (twi == TWI_OFF)			power_twi_enable();
+}
+#endif
+
+/*******************************************************************************
+* Name: idle
+* Description: Putting ATmega2560 & ATmega1280 into idle state. Please make sure
 *			   you understand the implication and result of disabling module.
 *			   Take note that extra Timer 5, 4, 3 compared to an ATmega328P/168.
-*			   Also take note that extra USART 3, 2, 1 compared to an 
+*			   Also take note that extra USART 3, 2, 1 compared to an
 *			   ATmega328P/168.
 *
 * Argument  	Description
@@ -402,75 +527,73 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 *
 *******************************************************************************/
 #if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega1280__)
-void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5, 
-					        timer4_t timer4, timer3_t timer3, timer2_t timer2, 
-							timer1_t timer1, timer0_t timer0, spi_t spi, 
-							usart3_t usart3, usart2_t usart2, usart1_t usart1, 
+void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
+					        timer4_t timer4, timer3_t timer3, timer2_t timer2,
+							timer1_t timer1, timer0_t timer0, spi_t spi,
+							usart3_t usart3, usart2_t usart2, usart1_t usart1,
 			                usart0_t usart0, twi_t twi)
 {
-	// Temporary clock source variable 
+	// Temporary clock source variable
 	unsigned char clockSource = 0;
-	
+
 	if (timer2 == TIMER2_OFF)
 	{
-		if (TCCR2B & CS22) clockSource |= (1 << CS22);
-		if (TCCR2B & CS21) clockSource |= (1 << CS21);
-		if (TCCR2B & CS20) clockSource |= (1 << CS20);
-	
+		// Store current setting
+        clockSource = TCCR2B;
+
 		// Remove the clock source to shutdown Timer2
 		TCCR2B &= ~(1 << CS22);
 		TCCR2B &= ~(1 << CS21);
 		TCCR2B &= ~(1 << CS20);
-		
+
 		power_timer2_disable();
 	}
-	
-	if (adc == ADC_OFF)	
+
+	if (adc == ADC_OFF)
 	{
 		ADCSRA &= ~(1 << ADEN);
 		power_adc_disable();
 	}
-	
-	if (timer5 == TIMER5_OFF)	power_timer5_disable();	
-	if (timer4 == TIMER4_OFF)	power_timer4_disable();	
-	if (timer3 == TIMER3_OFF)	power_timer3_disable();	
-	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
+
+	if (timer5 == TIMER5_OFF)	power_timer5_disable();
+	if (timer4 == TIMER4_OFF)	power_timer4_disable();
+	if (timer3 == TIMER3_OFF)	power_timer3_disable();
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
 	if (spi == SPI_OFF)		    power_spi_disable();
 	if (usart3 == USART3_OFF)	power_usart3_disable();
 	if (usart2 == USART2_OFF)	power_usart2_disable();
 	if (usart1 == USART1_OFF)	power_usart1_disable();
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
+
 	lowPowerBodOn(SLEEP_MODE_IDLE);
-	
+
 	if (adc == ADC_OFF)
 	{
 		power_adc_enable();
 		ADCSRA |= (1 << ADEN);
 	}
-	
+
 	if (timer2 == TIMER2_OFF)
 	{
-		if (clockSource & CS22) TCCR2B |= (1 << CS22);
-		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);
-		
+        // Restore previous setting
+        TCCR2B = clockSource;
+
 		power_timer2_enable();
 	}
 
-	if (timer5 == TIMER5_OFF)	power_timer5_enable();	
-	if (timer4 == TIMER4_OFF)	power_timer4_enable();		
-	if (timer3 == TIMER3_OFF)	power_timer3_enable();	
-	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
+	if (timer5 == TIMER5_OFF)	power_timer5_enable();
+	if (timer4 == TIMER4_OFF)	power_timer4_enable();
+	if (timer3 == TIMER3_OFF)	power_timer3_enable();
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
 	if (spi == SPI_OFF)			power_spi_enable();
 	if (usart3 == USART3_OFF)	power_usart3_enable();
 	if (usart2 == USART2_OFF)	power_usart2_enable();
@@ -482,10 +605,10 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 
 /*******************************************************************************
 * Name: idle
-* Description: Putting ATmega256RFR2 into idle state. Please make sure 
+* Description: Putting ATmega256RFR2 into idle state. Please make sure
 *			   you understand the implication and result of disabling module.
 *			   Take note that extra Timer 5, 4, 3 compared to an ATmega328P/168.
-*			   Also take note that extra USART 1 compared to an 
+*			   Also take note that extra USART 1 compared to an
 *			   ATmega328P/168.
 *
 * Argument  	Description
@@ -550,73 +673,71 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 *
 *******************************************************************************/
 #if defined (__AVR_ATmega256RFR2__)
-void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5, 
-					                timer4_t timer4, timer3_t timer3, timer2_t timer2, 
-													timer1_t timer1, timer0_t timer0, spi_t spi, 
-													usart1_t usart1, 
+void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
+					                timer4_t timer4, timer3_t timer3, timer2_t timer2,
+													timer1_t timer1, timer0_t timer0, spi_t spi,
+													usart1_t usart1,
 			                    usart0_t usart0, twi_t twi)
 {
-	// Temporary clock source variable 
+	// Temporary clock source variable
 	unsigned char clockSource = 0;
-	
+
 	if (timer2 == TIMER2_OFF)
 	{
-		if (TCCR2B & CS22) clockSource |= (1 << CS22);
-		if (TCCR2B & CS21) clockSource |= (1 << CS21);
-		if (TCCR2B & CS20) clockSource |= (1 << CS20);
-	
+		// Store current setting
+        clockSource = TCCR2B;
+
 		// Remove the clock source to shutdown Timer2
 		TCCR2B &= ~(1 << CS22);
 		TCCR2B &= ~(1 << CS21);
 		TCCR2B &= ~(1 << CS20);
-		
+
 		power_timer2_disable();
 	}
-	
-	if (adc == ADC_OFF)	
+
+	if (adc == ADC_OFF)
 	{
 		ADCSRA &= ~(1 << ADEN);
 		power_adc_disable();
 	}
-	
-	if (timer5 == TIMER5_OFF)	power_timer5_disable();	
-	if (timer4 == TIMER4_OFF)	power_timer4_disable();	
-	if (timer3 == TIMER3_OFF)	power_timer3_disable();	
-	if (timer1 == TIMER1_OFF)	power_timer1_disable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_disable();	
+
+	if (timer5 == TIMER5_OFF)	power_timer5_disable();
+	if (timer4 == TIMER4_OFF)	power_timer4_disable();
+	if (timer3 == TIMER3_OFF)	power_timer3_disable();
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
 	if (spi == SPI_OFF)			  power_spi_disable();
 	if (usart1 == USART1_OFF)	power_usart1_disable();
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			  power_twi_disable();
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
+
 	lowPowerBodOn(SLEEP_MODE_IDLE);
-	
+
 	if (adc == ADC_OFF)
 	{
 		power_adc_enable();
 		ADCSRA |= (1 << ADEN);
 	}
-	
+
 	if (timer2 == TIMER2_OFF)
 	{
-		if (clockSource & CS22) TCCR2B |= (1 << CS22);
-		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);
-		
+        // Restore previous setting
+        TCCR2B = clockSource;
+
 		power_timer2_enable();
 	}
 
-	if (timer5 == TIMER5_OFF)	power_timer5_enable();	
-	if (timer4 == TIMER4_OFF)	power_timer4_enable();		
-	if (timer3 == TIMER3_OFF)	power_timer3_enable();	
-	if (timer1 == TIMER1_OFF)	power_timer1_enable();	
-	if (timer0 == TIMER0_OFF)	power_timer0_enable();	
+	if (timer5 == TIMER5_OFF)	power_timer5_enable();
+	if (timer4 == TIMER4_OFF)	power_timer4_enable();
+	if (timer3 == TIMER3_OFF)	power_timer3_enable();
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
 	if (spi == SPI_OFF)			  power_spi_enable();
 	if (usart1 == USART1_OFF)	power_usart1_enable();
 	if (usart0 == USART0_OFF)	power_usart0_enable();
@@ -628,7 +749,7 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 /*******************************************************************************
 * Name: adcNoiseReduction
 * Description: Putting microcontroller into ADC noise reduction state. This is
-*			   a very useful state when using the ADC to achieve best and low 
+*			   a very useful state when using the ADC to achieve best and low
 *              noise signal.
 *
 * Argument  	Description
@@ -657,45 +778,42 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 *				(b) TIMER2_ON - Leave Timer 2 module in its default state
 *
 *******************************************************************************/
-void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc, 
+void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 										 timer2_t timer2)
 {
-	// Temporary clock source variable 
+	// Temporary clock source variable
 	unsigned char clockSource = 0;
-	
+
 	#if !defined(__AVR_ATmega32U4__)
 	if (timer2 == TIMER2_OFF)
 	{
-		if (TCCR2B & CS22) clockSource |= (1 << CS22);
-		if (TCCR2B & CS21) clockSource |= (1 << CS21);
-		if (TCCR2B & CS20) clockSource |= (1 << CS20);
-	
+		// Store current setting
+        clockSource = TCCR2B;
+
 		// Remove the clock source to shutdown Timer2
 		TCCR2B &= ~(1 << CS22);
 		TCCR2B &= ~(1 << CS21);
 		TCCR2B &= ~(1 << CS20);
 	}
 	#endif
-	
+
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
+
 	lowPowerBodOn(SLEEP_MODE_ADC);
-	
+
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
-	
+
 	#if !defined(__AVR_ATmega32U4__)
 	if (timer2 == TIMER2_OFF)
 	{
-		if (clockSource & CS22) TCCR2B |= (1 << CS22);
-		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);
-		
+        // Restore previous setting
+        TCCR2B = clockSource;
 	}
 	#endif
 }
@@ -703,8 +821,8 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 /*******************************************************************************
 * Name: powerDown
 * Description: Putting microcontroller into power down state. This is
-*			   the lowest current consumption state. Use this together with 
-*			   external pin interrupt to wake up through external event 
+*			   the lowest current consumption state. Use this together with
+*			   external pin interrupt to wake up through external event
 *			   triggering (example: RTC clockout pin, SD card detect pin).
 *
 * Argument  	Description
@@ -736,36 +854,36 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 {
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	if (bod == BOD_OFF)	
+	if (bod == BOD_OFF)
 	{
-		#if defined __AVR_ATmega328P__
+		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
 			lowPowerBodOff(SLEEP_MODE_PWR_DOWN);
 		#else
 			lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
 		#endif
 	}
-	else	
+	else
 	{
 		lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
 	}
-	
+
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 }
 
 /*******************************************************************************
 * Name: powerSave
 * Description: Putting microcontroller into power save state. This is
-*			   the lowest current consumption state after power down. 
+*			   the lowest current consumption state after power down.
 *			   Use this state together with an external 32.768 kHz crystal (but
 *			   8/16 MHz crystal/resonator need to be removed) to provide an
-*			   asynchronous clock source to Timer 2. Please take note that 
-*			   Timer 2 is also used by the Arduino core for PWM operation. 
+*			   asynchronous clock source to Timer 2. Please take note that
+*			   Timer 2 is also used by the Arduino core for PWM operation.
 *			   Please refer to wiring.c for explanation. Removal of the external
 *			   8/16 MHz crystal/resonator requires the microcontroller to run
 *			   on its internal RC oscillator which is not so accurate for time
@@ -801,37 +919,36 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 *				(b) TIMER2_ON - Leave Timer 2 module in its default state
 *
 *******************************************************************************/
-void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod, 
+void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 							     timer2_t timer2)
 {
-	// Temporary clock source variable 
+	// Temporary clock source variable
 	unsigned char clockSource = 0;
 
 	#if !defined(__AVR_ATmega32U4__)
 	if (timer2 == TIMER2_OFF)
 	{
-		if (TCCR2B & CS22) clockSource |= (1 << CS22);
-		if (TCCR2B & CS21) clockSource |= (1 << CS21);
-		if (TCCR2B & CS20) clockSource |= (1 << CS20);
-	
+		// Store current setting
+        clockSource = TCCR2B;
+
 		// Remove the clock source to shutdown Timer2
 		TCCR2B &= ~(1 << CS22);
 		TCCR2B &= ~(1 << CS21);
 		TCCR2B &= ~(1 << CS20);
 	}
 	#endif
-	
+
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
-	if (bod == BOD_OFF)	
+
+	if (bod == BOD_OFF)
 	{
-		#if defined __AVR_ATmega328P__
+		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
 			lowPowerBodOff(SLEEP_MODE_PWR_SAVE);
 		#else
 			lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
@@ -841,22 +958,21 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 	{
 		lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
 	}
-	
+
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
-	
+
 	#if !defined(__AVR_ATmega32U4__)
 	if (timer2 == TIMER2_OFF)
 	{
-		if (clockSource & CS22) TCCR2B |= (1 << CS22);
-		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);
+        // Restore previous setting
+        TCCR2B = clockSource;
 	}
 	#endif
 }
 
 /*******************************************************************************
 * Name: powerStandby
-* Description: Putting microcontroller into power standby state. 
+* Description: Putting microcontroller into power standby state.
 *
 * Argument  	Description
 * =========  	===========
@@ -887,16 +1003,16 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 {
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	
-	if (bod == BOD_OFF)	
+
+	if (bod == BOD_OFF)
 	{
-		#if defined __AVR_ATmega328P__
+		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
 			lowPowerBodOff(SLEEP_MODE_STANDBY);
 		#else
 			lowPowerBodOn(SLEEP_MODE_STANDBY);
@@ -906,15 +1022,16 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 	{
 		lowPowerBodOn(SLEEP_MODE_STANDBY);
 	}
-	
+
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 }
 
 /*******************************************************************************
 * Name: powerExtStandby
-* Description: Putting microcontroller into power extended standby state. This 
-*			   is different from the power standby state as it has the 
+* Description: Putting microcontroller into power extended standby state. This
+*			   is different from the power standby state as it has the
 *			   capability to run Timer 2 asynchronously.
+*              Not implemented on Atmega88 and Atmega168.
 *
 * Argument  	Description
 * =========  	===========
@@ -945,54 +1062,57 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 *				(b) TIMER2_ON - Leave Timer 2 module in its default state
 *
 *******************************************************************************/
-void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod, 
+void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 									   timer2_t timer2)
 {
-	// Temporary clock source variable 
+	// Temporary clock source variable
 	unsigned char clockSource = 0;
-	
+
 	#if !defined(__AVR_ATmega32U4__)
 	if (timer2 == TIMER2_OFF)
 	{
-		if (TCCR2B & CS22) clockSource |= (1 << CS22);
-		if (TCCR2B & CS21) clockSource |= (1 << CS21);
-		if (TCCR2B & CS20) clockSource |= (1 << CS20);
-	
+		// Store current setting
+        clockSource = TCCR2B;
+
 		// Remove the clock source to shutdown Timer2
 		TCCR2B &= ~(1 << CS22);
 		TCCR2B &= ~(1 << CS21);
 		TCCR2B &= ~(1 << CS20);
 	}
 	#endif
-	
+
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
-	
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
-		WDTCSR |= (1 << WDIE);	
+		WDTCSR |= (1 << WDIE);
 	}
-	if (bod == BOD_OFF)	
-	{
-		#if defined __AVR_ATmega328P__
-			lowPowerBodOff(SLEEP_MODE_EXT_STANDBY);
-		#else
+
+
+	#if defined (__AVR_ATmega88__) || defined (__AVR_ATmega168__) // SLEEP_MODE_EXT_STANDBY not implemented on Atmega88 / Atmega168
+	#else
+		if (bod == BOD_OFF)
+		{
+			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+				lowPowerBodOff(SLEEP_MODE_EXT_STANDBY);
+			#else
+				lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
+			#endif
+		}
+		else
+		{
 			lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
-		#endif
-	}
-	else	
-	{
-		lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
-	}
-		
+		}
+	#endif
+
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
-	
+
 	#if !defined(__AVR_ATmega32U4__)
 	if (timer2 == TIMER2_OFF)
 	{
-		if (clockSource & CS22) TCCR2B |= (1 << CS22);
-		if (clockSource & CS21) TCCR2B |= (1 << CS21);
-		if (clockSource & CS20) TCCR2B |= (1 << CS20);	
+        // Restore previous setting
+        TCCR2B = clockSource;
 	}
 	#endif
 }
@@ -1015,16 +1135,16 @@ ISR (WDT_vect, __attribute__((weak)) )
 #if defined (__SAMD21G18A__)
 /*******************************************************************************
 * Name: standby
-* Description: Putting SAMD21G18A into idle mode. This is the lowest current 
-*              consumption mode. Requires separate handling of clock and 
-* 			   peripheral management (disabling and shutting down) to achieve 
+* Description: Putting SAMD21G18A into idle mode. This is the lowest current
+*              consumption mode. Requires separate handling of clock and
+* 			   peripheral management (disabling and shutting down) to achieve
 * 			   the desired current consumption.
 *
 * Argument  	Description
 * =========  	===========
-* 1. idleMode   Idle mode level (0, 1, 2) where IDLE_2 level provide lowest 
+* 1. idleMode   Idle mode level (0, 1, 2) where IDLE_2 level provide lowest
 * 				current consumption in this mode.
-* 
+*
 *******************************************************************************/
 void	LowPowerClass::idle(idle_t idleMode)
 {
@@ -1036,15 +1156,15 @@ void	LowPowerClass::idle(idle_t idleMode)
 
 /*******************************************************************************
 * Name: standby
-* Description: Putting SAMD21G18A into standby mode. This is the lowest current 
-*              consumption mode. Use this together with the built-in RTC (use 
-*              RTCZero library) or external pin interrupt to wake up through 
+* Description: Putting SAMD21G18A into standby mode. This is the lowest current
+*              consumption mode. Use this together with the built-in RTC (use
+*              RTCZero library) or external pin interrupt to wake up through
 *              external event triggering.
 *
 * Argument  	Description
 * =========  	===========
 * 1. NIL
-* 
+*
 *******************************************************************************/
 void	LowPowerClass::standby()
 {
