@@ -11,6 +11,7 @@ void wakeUp()
 
 void setup()
 {
+    LowPower.pullupAllPins(); // This should appear before any calls to pinMode
     // Configure wake up pin as input.
     // This will consumes few uA of current.
     pinMode(wakeUpPin, INPUT);   

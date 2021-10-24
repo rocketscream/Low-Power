@@ -7,6 +7,8 @@ unsigned char count = 10;
 
 void setup()
 {
+  LowPower.pullupAllPins(); // This should appear before any calls to pinMode
+  
 	// Wait for serial USB port to open
 	while(!SerialUSB);
 	SerialUSB.println("***** ATSAMD21 Standby Mode Example *****");
