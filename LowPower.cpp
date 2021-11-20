@@ -1119,12 +1119,13 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 
 /*******************************************************************************
 * Name: ISR (WDT_vect)
-* Description: Watchdog Timer interrupt service routine. This routine is
-*		       required to allow automatic WDIF and WDIE bit clearance in
-*			   hardware.
+* Description: Watchdog Timer interrupt service routine. This routine is 
+*              required to allow automatic WDIF and WDIE bit clearance in 
+*              hardware. Declared with __attribute__((weak)) to allow
+*              linking in a custom ISR(WDT_vect) if needed.
 *
 *******************************************************************************/
-ISR (WDT_vect)
+ISR (WDT_vect, __attribute__((weak)) )
 {
 	// WDIE & WDIF is cleared in hardware upon entering this ISR
 	wdt_disable();
