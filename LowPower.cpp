@@ -111,6 +111,9 @@ do { 						\
 	#endif
 #endif
 
+// variable global to this file.
+volatile static bool wdtFinished;
+
 /*******************************************************************************
 * Name: idle
 * Description: Putting ATmega328P/168 into idle state. Please make sure you
@@ -194,13 +197,17 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	lowPowerBodOn(SLEEP_MODE_IDLE);
+	do {    // Do this at least once even if SLEEP_FOREVER
+		lowPowerBodOn(SLEEP_MODE_IDLE);
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF)
 	{
@@ -210,9 +217,9 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 
 	if (timer2 == TIMER2_OFF)
 	{
-        // Restore previous setting
-        TCCR2B = clockSource;
-        
+		// Restore previous setting
+		TCCR2B = clockSource;
+
 		power_timer2_enable();
 	}
 
@@ -304,13 +311,17 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 	if (twi == TWI_OFF)			power_twi_disable();
 	if (usb == USB_OFF)			power_usb_disable();
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	lowPowerBodOn(SLEEP_MODE_IDLE);
+	do {    // Do this at least once even if SLEEP_FOREVER
+		lowPowerBodOn(SLEEP_MODE_IDLE);
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF)
 	{
@@ -418,13 +429,17 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer2_t timer2,
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	lowPowerBodOn(SLEEP_MODE_IDLE);
+	do {    // Do this at least once even if SLEEP_FOREVER
+		lowPowerBodOn(SLEEP_MODE_IDLE);
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF)
 	{
@@ -567,13 +582,17 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			power_twi_disable();
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	lowPowerBodOn(SLEEP_MODE_IDLE);
+	do {	// Do this at least once even if SLEEP_FOREVER
+		lowPowerBodOn(SLEEP_MODE_IDLE);
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF)
 	{
@@ -711,13 +730,17 @@ void	LowPowerClass::idle(period_t period, adc_t adc, timer5_t timer5,
 	if (usart0 == USART0_OFF)	power_usart0_disable();
 	if (twi == TWI_OFF)			  power_twi_disable();
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	lowPowerBodOn(SLEEP_MODE_IDLE);
+	do {	// Do this at least once even if SLEEP_FOREVER
+		lowPowerBodOn(SLEEP_MODE_IDLE);
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF)
 	{
@@ -799,13 +822,17 @@ void	LowPowerClass::adcNoiseReduction(period_t period, adc_t adc,
 
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	lowPowerBodOn(SLEEP_MODE_ADC);
+	do {	// Do this at least once even if SLEEP_FOREVER
+		lowPowerBodOn(SLEEP_MODE_ADC);
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 
@@ -855,23 +882,28 @@ void	LowPowerClass::powerDown(period_t period, adc_t adc, bod_t bod)
 {
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
-	if (bod == BOD_OFF)
-	{
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
-			lowPowerBodOff(SLEEP_MODE_PWR_DOWN);
-		#else
+
+	do {	// Do this at least once even if SLEEP_FOREVER
+		if (bod == BOD_OFF)
+		{
+				#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+					lowPowerBodOff(SLEEP_MODE_PWR_DOWN);
+				#else
+					lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
+				#endif
+		}
+		else
+		{
 			lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
-		#endif
-	}
-	else
-	{
-		lowPowerBodOn(SLEEP_MODE_PWR_DOWN);
-	}
+		}
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 }
@@ -940,24 +972,28 @@ void	LowPowerClass::powerSave(period_t period, adc_t adc, bod_t bod,
 
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	if (bod == BOD_OFF)
-	{
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
-			lowPowerBodOff(SLEEP_MODE_PWR_SAVE);
-		#else
+	do {	// Do this at least once even if SLEEP_FOREVER
+		if (bod == BOD_OFF)
+		{
+			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+				lowPowerBodOff(SLEEP_MODE_PWR_SAVE);
+			#else
+				lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
+			#endif
+		}
+		else
+		{
 			lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
-		#endif
-	}
-	else
-	{
-		lowPowerBodOn(SLEEP_MODE_PWR_SAVE);
-	}
+		}
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 
@@ -1004,24 +1040,28 @@ void	LowPowerClass::powerStandby(period_t period, adc_t adc, bod_t bod)
 {
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-	if (bod == BOD_OFF)
-	{
-		#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
-			lowPowerBodOff(SLEEP_MODE_STANDBY);
-		#else
+	do {	// Do this at least once even if SLEEP_FOREVER
+		if (bod == BOD_OFF)
+		{
+			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+				lowPowerBodOff(SLEEP_MODE_STANDBY);
+			#else
+				lowPowerBodOn(SLEEP_MODE_STANDBY);
+			#endif
+		}
+		else
+		{
 			lowPowerBodOn(SLEEP_MODE_STANDBY);
-		#endif
-	}
-	else
-	{
-		lowPowerBodOn(SLEEP_MODE_STANDBY);
-	}
+		}
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 }
@@ -1083,28 +1123,31 @@ void	LowPowerClass::powerExtStandby(period_t period, adc_t adc, bod_t bod,
 
 	if (adc == ADC_OFF)	ADCSRA &= ~(1 << ADEN);
 
+	// set wdtFinished true if SLEEP_FOREVER so single test will terminate sleep
+	wdtFinished = period == SLEEP_FOREVER;	// assigned before IE to prevent race
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
 		WDTCSR |= (1 << WDIE);
 	}
 
-
-	#if defined (__AVR_ATmega88__) || defined (__AVR_ATmega168__) // SLEEP_MODE_EXT_STANDBY not implemented on Atmega88 / Atmega168
-	#else
-		if (bod == BOD_OFF)
-		{
-			#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
-				lowPowerBodOff(SLEEP_MODE_EXT_STANDBY);
-			#else
+	do {	// Do this at least once even if SLEEP_FOREVER
+		#if defined (__AVR_ATmega88__) || defined (__AVR_ATmega168__) // SLEEP_MODE_EXT_STANDBY not implemented on Atmega88 / Atmega168
+		#else
+			if (bod == BOD_OFF)
+			{
+				#if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
+					lowPowerBodOff(SLEEP_MODE_EXT_STANDBY);
+				#else
+					lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
+				#endif
+			}
+			else
+			{
 				lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
-			#endif
-		}
-		else
-		{
-			lowPowerBodOn(SLEEP_MODE_EXT_STANDBY);
-		}
-	#endif
+			}
+		#endif
+	} while (!wdtFinished);
 
 	if (adc == ADC_OFF) ADCSRA |= (1 << ADEN);
 
@@ -1128,6 +1171,7 @@ ISR (WDT_vect)
 {
 	// WDIE & WDIF is cleared in hardware upon entering this ISR
 	wdt_disable();
+	wdtFinished = true;
 }
 
 #elif defined (__arm__)
