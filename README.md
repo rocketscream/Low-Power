@@ -18,4 +18,4 @@ Devices Supported:
 * ATSAMD21G18A
 
 ####Notes:
-External interrupt during standby on ATSAMD21G18A requires a patch to the <a href="https://github.com/arduino/ArduinoCore-samd">Arduino SAMD Core</a> in order for it to work. Fix is provided by this particular <a href="https://github.com/arduino/ArduinoCore-samd/pull/90">pull request</a>.
+External interrupt during standby on ATSAMD21G18A requires a patch to the <a href="https://github.com/arduino/ArduinoCore-samd">Arduino SAMD Core</a> in order for it to work. Fix is provided by this particular <a href="https://github.com/arduino/ArduinoCore-samd/pull/90">pull request</a> and has been merged as of <a href="https://github.com/arduino/ArduinoCore-samd/releases/tag/1.6.5">Release 1.6.5</a>.
