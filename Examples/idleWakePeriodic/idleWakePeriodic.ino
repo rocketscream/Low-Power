@@ -1,4 +1,4 @@
-// **** INCLUDES *****
+// -*- c++ -*-
 #include "LowPower.h"
 
 void setup()

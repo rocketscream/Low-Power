@@ -204,6 +204,10 @@ class LowPowerClass
                         #elif defined(__AVR_ATtiny167__) || defined(__AVR_ATtiny87__)
 				void	idle(period_t period, adc_t adc, 
 					     timer1_t timer1, timer0_t timer0, spi_t spi, usi_t usi, lin_t lin);
+                        #elif defined(__AVR_ATtiny1634__)
+				void idle(period_t period, adc_t adc, 
+					  timer1_t timer1, timer0_t timer0, usi_t usi, usart1_t usart1, usart0_t usart0,
+					  twi_t twi);
 			#else
 				#warning "MCU type not yet supported, so there is only a minimal 'idle' method"
 			#endif

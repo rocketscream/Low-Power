@@ -1,7 +1,7 @@
 /*******************************************************************************
 * LowPower Library
-* Version: 1.91
-* Date: 12-01-2020
+* Version: 1.92
+* Date: 20.03.2023
 * Author: Lim Phang Moh
 * Company: Rocket Scream Electronics
 * Website: www.rocketscream.com
@@ -13,6 +13,7 @@
 *
 * Revision  Description
 * ========  ===========
+* 1.92      Fixed typo with 1634 where an assignment was made instead of a comparison
 * 1.91      Putting ATmega328P back again. Sigh!
 * 1.90      Added minimal idle method with just the period argument.
 *           Just give a compile-time warning when MCU type is not supported yet  instead of giving an error
@@ -1054,6 +1055,13 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 	if (timer0 == TIMER0_OFF)	power_timer0_disable();
 	if (usi == USI_OFF)		power_usi_disable();
 
+	if (adc == ADC_OFF)
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+
+
 	if (period != SLEEP_FOREVER)
 	{
 		wdt_enable(period);
@@ -1072,6 +1080,97 @@ void	LowPowerClass::idle(period_t period, adc_t adc,
 	if (timer0 == TIMER0_OFF)	power_timer0_enable();
 	if (usi == USI_OFF)		power_usi_enable();
 
+}
+#endif
+
+
+/*******************************************************************************
+* Name: idle
+* Description: Putting ATtiny1634 into idle state. Please make sure
+*	       you understand the implication and result of disabling module.
+*
+* Argument  	Description
+* =========  	===========
+* 1. period     Duration of low power mode. Use SLEEP_FOREVER to use other wake
+*				up resource:
+*				(a) SLEEP_15MS - 15 ms sleep
+*				(b) SLEEP_30MS - 30 ms sleep
+*				(c) SLEEP_60MS - 60 ms sleep
+*				(d) SLEEP_120MS - 120 ms sleep
+*				(e) SLEEP_250MS - 250 ms sleep
+*				(f) SLEEP_500MS - 500 ms sleep
+*				(g) SLEEP_1S - 1 s sleep
+*				(h) SLEEP_2S - 2 s sleep
+*				(i) SLEEP_4S - 4 s sleep
+*				(j) SLEEP_8S - 8 s sleep
+*				(k) SLEEP_FOREVER - Sleep without waking up through WDT
+*
+* 2. adc		ADC module disable control:
+*				(a) ADC_OFF - Turn off ADC module
+*				(b) ADC_ON - Leave ADC module in its default state
+*
+* 3. timer1		Timer 1 module disable control:
+*				(a) TIMER1_OFF - Turn off Timer 1 module
+*				(b) TIMER1_ON - Leave Timer 1 module in its default state
+*
+* 4. timer0		Timer 0 module disable control:
+*				(a) TIMER0_OFF - Turn off Timer 0 module
+*				(b) TIMER0_ON - Leave Timer 0 module in its default state
+*
+* 5. usi		USI module disable control:
+*				(a) USI_OFF - Turn off USI module
+*				(b) USI_ON - Leave USI module in its default state
+*
+* 6.usart1		USART1 module disable control:
+*				(a) USART1_OFF - Turn off USART1  module
+*				(b) USART1_ON - Leave USART1 module in its default state
+*
+* 7.usart0		USART0 module disable control:
+*				(a) USART0_OFF - Turn off USART0  module
+*				(b) USART0_ON - Leave USART0 module in its default state
+*
+* 8.twi		TWI module disable control:
+*				(a) TWI_OFF - Turn off TWI module
+*				(b) TWI_ON - Leave TWI module in its default state
+*
+*******************************************************************************/
+#if defined(__AVR_ATtiny1634__) 
+void	LowPowerClass::idle(period_t period, adc_t adc, 
+			    timer1_t timer1, timer0_t timer0, usi_t usi, usart1_t usart1, usart0_t usart0,
+			    twi_t twi)
+{
+
+        if (twi == TWI_OFF)              power_twi_disable();
+        if (usart1 == USART1_OFF)       power_usart1_disable();
+        if (usart0 == USART0_OFF)       power_usart0_disable();
+	if (timer1 == TIMER1_OFF)	power_timer1_disable();
+	if (timer0 == TIMER0_OFF)	power_timer0_disable();
+	if (usi == USI_OFF)		power_usi_disable();
+	if (adc == ADC_OFF)
+	{
+		ADCSRA &= ~(1 << ADEN);
+		power_adc_disable();
+	}
+
+	if (period != SLEEP_FOREVER)
+	{
+		wdt_enable(period);
+		_WD_CONTROL_REG |= (1 << WDIE);
+	}
+
+	lowPowerBodOn(SLEEP_MODE_IDLE);
+
+	if (adc == ADC_OFF)
+	{
+		power_adc_enable();
+		ADCSRA |= (1 << ADEN);
+	}
+        if (twi == TWI_OFF)              power_twi_enable();
+        if (usart1 == USART1_OFF)       power_usart1_enable();
+        if (usart0 == USART0_OFF)       power_usart0_enable();
+	if (timer1 == TIMER1_OFF)	power_timer1_enable();
+	if (timer0 == TIMER0_OFF)	power_timer0_enable();
+	if (usi == USI_OFF)		power_usi_enable();
 }
 #endif
 
